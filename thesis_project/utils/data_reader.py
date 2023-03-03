@@ -69,7 +69,7 @@ class SinD:
 
     def generate_trajectories(self, cov: int = 1, n: int = 2):
         for _id in self.pedestrian_data.keys():
-
+            pass
 
     def plot_dataset(self):
         ax1 = plt.figure(1).add_subplot(projection='3d')

@@ -1,4 +1,4 @@
-from sklearn.cluster import KMeans, DBSCAN
+from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 from utils.data_processor import process_data
 import numpy as np

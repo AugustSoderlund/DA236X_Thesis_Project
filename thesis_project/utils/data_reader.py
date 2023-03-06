@@ -1,10 +1,13 @@
-import time
 from sklearn.model_selection import train_test_split
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-from map import SinD_map
+
+if __name__ == "__main__":
+    from map import SinD_map
+else:
+    from .map import SinD_map
 from tqdm import tqdm
 import pickle
 
@@ -25,7 +28,7 @@ dict =  {
 """
 
 
-ROOT = "C:/Users/ASOWXU/Desktop/Thesis Project/Code/DA236X_Thesis_Project/thesis_project/.datasets"
+ROOT = os.getcwd() + "/thesis_project/.datasets"
 
 
 class SinD:
@@ -60,9 +63,8 @@ class SinD:
     def __init__(self, name: str = "Ped_smoothed_tracks", file_extension: str = ".csv"):
         self._DATADIR = "SinD/Data"
         self._DATASETS = os.listdir("/".join([ROOT, self._DATADIR]))
-        self._DATASETS = ["8_02_1"]
-        #self._DATASETS.pop(self._DATASETS.index("mapfile-Tianjin.osm"))
-        #self.map = SinD_map()
+        self._DATASETS.pop(self._DATASETS.index("mapfile-Tianjin.osm"))
+        self.map = SinD_map()
         self.__load_dataset(name+file_extension)
 
     def __load_dataset(self, name):
@@ -87,16 +89,15 @@ class SinD:
         _concat_data = []
         for _data in tqdm(self.pedestrian_data.values()):
             _ped_data = []
+            x, y, vx, vy, ax, ay = _data["x"], _data["y"], _data["vx"], _data["vy"], _data["ax"], _data["ay"]
             for _i in range(input_len, len(_data["x"])):
-                x, y, vx, vy, ax, ay = _data["x"], _data["y"], _data["vx"], _data["vy"], _data["ax"], _data["ay"]
-                _to_append = np.array([x.loc[_i-input_len:_i], y.loc[_i-input_len:_i], 
-                                       vx.loc[_i-input_len:_i], vy.loc[_i-input_len:_i], 
-                                       ax.loc[_i-input_len:_i], ay.loc[_i-input_len:_i]])
-                if _to_append.shape == (6, input_len+1):
-                    _ped_data.append(_to_append)
+                _to_append = np.array([*x.iloc[_i-input_len:_i], *y.iloc[_i-input_len:_i], 
+                                       *vx.iloc[_i-input_len:_i], *vy.iloc[_i-input_len:_i], 
+                                       *ax.iloc[_i-input_len:_i], *ay.iloc[_i-input_len:_i]])
+                _ped_data.append(_to_append)
             _concat_data = [*_concat_data, *_ped_data] if len(_ped_data) > 0 else _concat_data
         if save_data:
-            _f = open(ROOT + "/data.pickle", "wb")
+            _f = open(ROOT + "/sind.pkl", "wb")
             pickle.dump(np.array(_concat_data), _f)
         return np.array(_concat_data)
         
@@ -131,7 +132,4 @@ class inD:
 if __name__ == "__main__":
     data = SinD()
     d = data.data()
-    #print(d, type(d), d.shape)
-    print(d[-1])
-    for i, dat in enumerate(d):
-        print(dat.shape)
+    print(d)

@@ -33,6 +33,11 @@ class SinD_map:
             Gets all the areas and plots the PolygonPatches in a matplotlib figure 
             with the transparency alpha
 
+        get_area(regex: str, tag_key: str) -> list
+            given a regular expression and a key in the tags-list of the data-dict,
+            this function returns the location of all nodes beloning to the region
+            given by the regex
+
     """
     def __init__(self, map_dir: str = "SinD/Data/mapfile-Tianjin.osm"):
         self._map_dir = map_dir
@@ -106,6 +111,7 @@ class SinD_map:
     def __get_exterior(self, points: list, alpha: float = 0.4):
         return alphashape.alphashape(np.array(points), alpha=alpha)
     
+
 
 class inD_map(SinD_map):
     def __init__(self):
@@ -191,6 +197,6 @@ class LL2XYProjector:
 
 if __name__ == "__main__":
     map = SinD_map()
-    map.plot_areas()
+    map.plot_areas(highlight_areas=["road"])
     plt.show()
     

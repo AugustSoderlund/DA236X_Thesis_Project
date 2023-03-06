@@ -4,10 +4,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 
-if __name__ == "__main__":
-    from map import SinD_map
-else:
+if __package__ or "." in __name__:
     from .map import SinD_map
+else:
+    from map import SinD_map
 from tqdm import tqdm
 import pickle
 
@@ -69,6 +69,7 @@ class SinD:
 
     def __load_dataset(self, name):
         i = 0
+        self.frequency = 1 / (100.100100100 / 1000)
         self.pedestrian_data = {}
         for dataset in self._DATASETS:
             _path = "/".join([ROOT, self._DATADIR, dataset, name])

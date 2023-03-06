@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+from shapely.geometry import LineString
 
 if __package__ or "." in __name__:
     from .map import SinD_map
@@ -28,6 +29,11 @@ dict =  {
 
 
 ROOT = os.getcwd() + "/thesis_project/.datasets"
+LABELS = {"crossing": 0,
+          "not_crossing": 1,
+          "crossing_illegally": 2,
+          "crossing_cautious": 3,
+          "unknown": 4}
 
 
 class SinD:
@@ -48,10 +54,6 @@ class SinD:
         data(input_len: int, save_data: bool) -> np.array
             retrieves every input_len part of the trajectories and
             returns a numpy array containing the data inside
-        
-        generate_trajectories(cov: int, n: int) -> list[trajectories]
-            generates n new trajectories sampled from the sets that are
-            produced from the measurement and its uncertainty
 
         plot_dataset() -> None
             plots both a 2D plot of the historical locations along the
@@ -79,27 +81,43 @@ class SinD:
                 self.pedestrian_data.update({i: {"x": x, "y": y, "vx": vx, "vy": vy, "ax": ax, "ay": ay}}) 
                 i += 1  
 
-
-    def generate_trajectories(self, cov: int = 1, n: int = 2):
-        # Generate new trajectories given uncertainty
-        # Should be done before the self.data() function
-        pass
-
     def data(self, input_len: int = 30, save_data: bool = True):
         _concat_data = []
-        for _data in tqdm(self.pedestrian_data.values()):
+        for _data in tqdm(self.pedestrian_data.values(), desc="Retreiving input"):
             _ped_data = []
             x, y, vx, vy, ax, ay = _data["x"], _data["y"], _data["vx"], _data["vy"], _data["ax"], _data["ay"]
             for _i in range(input_len, len(_data["x"])):
-                _to_append = np.array([*x.iloc[_i-input_len:_i], *y.iloc[_i-input_len:_i], 
+                _extracted_data = np.array([*x.iloc[_i-input_len:_i], *y.iloc[_i-input_len:_i], 
                                        *vx.iloc[_i-input_len:_i], *vy.iloc[_i-input_len:_i], 
                                        *ax.iloc[_i-input_len:_i], *ay.iloc[_i-input_len:_i]])
-                _ped_data.append(_to_append)
+                _ped_data.append(_extracted_data)
             _concat_data = [*_concat_data, *_ped_data] if len(_ped_data) > 0 else _concat_data
         if save_data:
             _f = open(ROOT + "/sind.pkl", "wb")
             pickle.dump(np.array(_concat_data), _f)
         return np.array(_concat_data)
+    
+    def labels(self, data: np.ndarray, input_len: int = 30):
+        _labels = []
+        for _data in tqdm(data, desc="Labeling data"):
+            _x, _y = _data[0:input_len], _data[input_len:2*input_len] 
+            _l = LineString(list(zip(_x, _y)))
+            if (_l.within(self.map.road_poly) or _l.within(self.map.intersection_poly) or _l.within(self.map.gap_poly)) and not _l.within(self.map.crosswalk_poly):
+                _labels.append(LABELS["crossing_illegally"])
+            elif _l.within(self.map.crosswalk_poly) and not (_l.within(self.map.road_poly) or _l.within(self.map.intersection_poly) or _l.within(self.map.gap_poly)):
+                _labels.append(LABELS["crossing"])
+            elif _l.within(self.map.sidewalk_poly) and not (_l.within(self.map.road_poly) or _l.within(self.map.intersection_poly) or _l.within(self.map.gap_poly) or _l.within(self.map.crosswalk_poly)):
+                _labels.append(LABELS["not_crossing"])
+            elif _l.within(self.map.crosswalk_poly):
+                _labels.append(LABELS["crossing_cautious"])
+            elif _l.within(self.map.road_poly) or _l.within(self.map.intersection_poly):
+                _labels.append(LABELS["crossing_illegally"])
+            elif _l.within(self.map.sidewalk_poly):
+                _labels.append(LABELS["not_crossing"])
+            else:
+                _labels.append(LABELS["unknown"])
+        return np.array(_labels)
+            
 
 
         
@@ -129,6 +147,7 @@ class inD:
         self._DATASETS.pop(self._DATASETS.index("mapfile-Tianjin.osm"))
         #self.map = inD_map()
         self.__load_dataset(name+file_extension)
+
 
 
 if __name__ == "__main__":

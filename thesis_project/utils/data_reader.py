@@ -1,4 +1,3 @@
-from sklearn.model_selection import train_test_split
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -101,6 +100,8 @@ class SinD:
             _f = open(ROOT + "/sind.pkl", "wb")
             pickle.dump(np.array(_concat_data), _f)
         return np.array(_concat_data)
+
+
         
 
     def plot_dataset(self, map_overlay: bool = True, alpha: float = 0.2):

@@ -7,9 +7,8 @@ import re
 import numpy as np
 import alphashape
 from descartes import PolygonPatch
-from shapely.geometry import LineString
 
-ROOT = "C:/Users/ASOWXU/Desktop/Thesis Project/Code/DA236X_Thesis_Project/thesis_project/.datasets/SinD/Data/mapfile-Tianjin.osm"
+ROOT = "C:/Users/ASOWXU/Desktop/Thesis Project/Code/DA236X_Thesis_Project/thesis_project/.datasets/"
 
 class SinD_map:
     """ Map class for the SinD dataset
@@ -19,65 +18,80 @@ class SinD_map:
         map_dir : str
             The absolute (or relative) path to the location where the .osm file is located
 
+        Attributes:
+        -----------
+        osm_data            : dict
+        croswalk_poly       : shapely.geometry.multipolygon.MultiPolygon
+        intersection_poly   : shapely.geometry.multipolygon.MultiPolygon
+        gap_poly            : shapely.geometry.multipolygon.MultiPolygon
+        road_poly           : shapely.geometry.multipolygon.MultiPolygon
+        sidewalk_poly       : shapely.geometry.multipolygon.MultiPolygon
+        
         Functions:
         ----------
-        *** ADD FUNCTIONS ***
+        plot_areas(alpha: float) -> matplotlib.pyplot.Axes
+            Gets all the areas and plots the PolygonPatches in a matplotlib figure 
+            with the transparency alpha
+
     """
-    def __init__(self, map_dir: str = ROOT):
-        self.osm_data = self.__load_osm_data(map_dir)
-        self.__intersection_polygon(), self.__crosswalk_polygon(), self.__gap_polygon(), self.__road_and_sidewalk_polygon()
-        self.__fix_poly_sizes()
+    def __init__(self, map_dir: str = "SinD/Data/mapfile-Tianjin.osm"):
+        self._map_dir = map_dir
+        self.osm_data = self.__load_osm_data(ROOT + map_dir)
+        self.__initialize_polygons() if re.findall("SinD", map_dir) else None
 
     def __load_osm_data(self, map_dir: str):
         osmhandler = OSMHandler()
         osmhandler.apply_file(map_dir)
         return osmhandler.osm_data
     
-    def plot_areas(self):
+    def plot_areas(self, highlight_areas: list = ["crosswalk"], alpha: float = 0.2):
         _, ax = plt.subplots()
-        __points = self.get_area("")
-        ax.scatter(*zip(*__points), alpha=0) # To get bounds correct
-        ax.add_patch(PolygonPatch(self.crosswalk_poly, alpha=0.2, color="b"))
-        ax.add_patch(PolygonPatch(self.intersection_poly, alpha=0.2, color="r"))
-        ax.add_patch(PolygonPatch(self.gap_poly, alpha=0.2, color="r"))
-        ax.add_patch(PolygonPatch(self.road_poly, alpha=0.2, color="r"))
-        ax.add_patch(PolygonPatch(self.sidewalk_poly, alpha=0.2, color="g"))
-        plt.show()
+        _points = self.get_area("")
+        ax.scatter(*zip(*_points), alpha=0) # To get bounds correct
+        _attr = dir(self)
+        _polys = [v for (_, v) in enumerate(_attr) if re.findall("poly$", v)]
+        ["_".join([area, "poly"]) for area in highlight_areas]
+        _ids = [_polys.index(i) for i in ["_".join([area, "poly"]) for area in highlight_areas]]
+        _colors = np.array(["b"] * len(_polys))
+        _colors[_ids] = "g"
+        for i, _poly in enumerate(_polys):
+            ax.add_patch(PolygonPatch(eval(".".join(["self", _poly])), alpha=alpha, color=_colors[i]))
+        return ax
     
-    def get_area(self, regex: str = "crosswalk"):
-        __ways, __nodes, __locs = [], [], []
+    def get_area(self, regex: str = "crosswalk", tag_key: str = "name"):
+        _ways, _nodes, _locs = [], [], []
         for (_, values) in self.osm_data["Relations"].items():
             tags = values["tags"]
-            if "name" not in tags.keys():
+            if tag_key not in tags.keys():
                 break
-            __found = re.findall(regex, tags["name"])
-            if __found:
-                __ways = [*__ways, *values["way_members"]]
-        for __way in __ways:
-            __nodes = [*__nodes, *self.osm_data["Ways"][__way]["nodes"]]
-        for __node in __nodes:
-            __locs.append(self.osm_data["Nodes"][__node])
-        return __locs
+            _found = re.findall(regex, tags[tag_key])
+            if _found:
+                _ways = [*_ways, *values["way_members"]]
+        for _way in _ways:
+            _nodes = [*_nodes, *self.osm_data["Ways"][_way]["nodes"]]
+        for _node in _nodes:
+            _locs.append(self.osm_data["Nodes"][_node])
+        return _locs
     
     def __crosswalk_polygon(self):
-        __points = self.get_area("crosswalk")
-        crosswalk_shape = self.__get_exterior(__points)
-        self.crosswalk_poly = crosswalk_shape.difference(self.intersection_poly) if re.findall("Tianjin", ROOT) else crosswalk_shape
+        _points = self.get_area("crosswalk")
+        crosswalk_shape = self.__get_exterior(_points)
+        self.crosswalk_poly = crosswalk_shape.difference(self.intersection_poly) if re.findall("Tianjin", ROOT + self._map_dir) else crosswalk_shape
 
     def __intersection_polygon(self):
-        __points = self.get_area("inter")
-        self.intersection_poly = self.__get_exterior(__points)
+        _points = self.get_area("inter")
+        self.intersection_poly = self.__get_exterior(_points)
     
     def __gap_polygon(self):
-        __points = self.get_area("gap")
-        self.gap_poly = self.__get_exterior(__points)
+        _points = self.get_area("gap")
+        self.gap_poly = self.__get_exterior(_points)
     
     def __road_and_sidewalk_polygon(self, sidewalk_size: float = 8.0):
-        __points = self.get_area("")
+        _points = self.get_area("")
         cross_poly = self.crosswalk_poly
         inter_poly = self.intersection_poly
         gap_poly = self.gap_poly
-        road_poly = self.__get_exterior(__points)
+        road_poly = self.__get_exterior(_points)
         sidewalk_poly = road_poly.buffer(sidewalk_size).difference(road_poly).intersection(road_poly.minimum_rotated_rectangle.buffer(-0.2))
         self.road_poly, self.sidewalk_poly = road_poly.difference(cross_poly).difference(inter_poly).difference(gap_poly), sidewalk_poly
 
@@ -85,8 +99,24 @@ class SinD_map:
         self.intersection_poly = self.intersection_poly.difference(self.crosswalk_poly.buffer(3)).buffer(3)
         self.crosswalk_poly = self.crosswalk_poly.buffer(3).difference(self.intersection_poly).difference(self.road_poly).difference(self.sidewalk_poly).difference(self.gap_poly)
 
+    def __initialize_polygons(self):
+        self.__intersection_polygon(), self.__crosswalk_polygon(), self.__gap_polygon(), self.__road_and_sidewalk_polygon()
+        self.__fix_poly_sizes()
+
     def __get_exterior(self, points: list, alpha: float = 0.4):
         return alphashape.alphashape(np.array(points), alpha=alpha)
+    
+
+class inD_map(SinD_map):
+    def __init__(self):
+        super().__init__(map_dir = "inD/lanelets/location2.osm")
+    
+    def roads(self):
+        _nodes = self.get_area("road", "subtype")
+
+    def walkway(self):
+        _nodes = self.get_area("", "subtype")
+        print(_nodes)
         
 
 
@@ -162,3 +192,5 @@ class LL2XYProjector:
 if __name__ == "__main__":
     map = SinD_map()
     map.plot_areas()
+    plt.show()
+    

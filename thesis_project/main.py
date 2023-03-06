@@ -1,6 +1,7 @@
 from sklearn.model_selection import train_test_split
 from utils.visualization import *
 from PTC.clustering import AutoCluster, Cluster
+from PTC.classification import DecisionTree
 from utils.data_reader import SinD, LABELS
 import numpy as np
 import pickle
@@ -24,8 +25,7 @@ if __name__ == "__main__":
         data = _sind.data()
     train_data, test_data = split_data(data)
     labels = _sind.labels(train_data)
-    c = Cluster(n=len(LABELS.keys()))
+    c = DecisionTree()
     c.train(train_data, labels)
-    p = c.predict(test_data)
-    print(type(c.classifier.labels_), type(labels))
-    visualize_class(_sind.map, 0, train_data, c.classifier.labels_, 30)
+    p = c.predict(train_data)
+    visualize_all_classes(_sind.map, len(LABELS.keys()), train_data, p, 30)

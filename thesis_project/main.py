@@ -28,4 +28,4 @@ if __name__ == "__main__":
     c.train(train_data, labels)
     p = c.predict(test_data)
     print(type(c.classifier.labels_), type(labels))
-    visualize_class(_sind.map, 0, train_data, labels, 30)
+    visualize_class(_sind.map, 0, train_data, c.classifier.labels_, 30)

@@ -5,9 +5,9 @@ import numpy as np
 
 
 class Cluster:
-    def __init__(self, n: int = 8, classifier: str = "kmeans", eps: float = 0.3, preprocess_data: bool = True):
+    def __init__(self, n: int = 8, eps: float = 0.3, preprocess_data: bool = True):
         self.n_c, self.eps, self.preprocess_data = n, eps, preprocess_data
-        self.classifier = KMeans(n_clusters=n, n_init=10) if classifier == "kmeans" else DBSCAN(eps=eps)
+        self.classifier = KMeans(n_clusters=n, n_init=10)
         self._scaler = StandardScaler()
 
     def train(self, data: np.ndarray, labels: np.ndarray):
@@ -21,8 +21,8 @@ class Cluster:
         return self.classifier.predict(_d)
     
 class AutoCluster(Cluster):
-    def __init__(self, n: int = 8, classifier: str = "kmeans", eps: float = 0.3, preprocess_data: bool = True):
-        super().__init__(n, classifier, eps, preprocess_data)
+    def __init__(self, n: int = 8, eps: float = 0.3, preprocess_data: bool = True):
+        super().__init__(n, eps, preprocess_data)
 
     def train(self, data: np.ndarray):
         _data = process_data(data, int(data.shape[1]/6)) if self.preprocess_data else data

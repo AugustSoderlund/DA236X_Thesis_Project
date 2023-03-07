@@ -10,8 +10,8 @@ class Cluster:
         self.classifier = KMeans(n_clusters=n, n_init=10)
         self._scaler = StandardScaler()
 
-    def train(self, data: np.ndarray, labels: np.ndarray):
-        _data = process_data(data, int(data.shape[1]/6)) if self.preprocess_data else data
+    def train(self, data: np.ndarray, labels: np.ndarray, input_len: int = 30):
+        _data = process_data(data, input_len) if self.preprocess_data else data
         _d = self._scaler.fit_transform(X=_data, y=labels)
         self.classifier.fit(X=_d, y=labels)
 
@@ -24,7 +24,7 @@ class AutoCluster(Cluster):
     def __init__(self, n: int = 8, eps: float = 0.3, preprocess_data: bool = True):
         super().__init__(n, eps, preprocess_data)
 
-    def train(self, data: np.ndarray):
-        _data = process_data(data, int(data.shape[1]/6)) if self.preprocess_data else data
+    def train(self, data: np.ndarray, input_len: int = 30):
+        _data = process_data(data, input_len) if self.preprocess_data else data
         _d = self._scaler.fit_transform(_data)
         self.classifier.fit(_d)

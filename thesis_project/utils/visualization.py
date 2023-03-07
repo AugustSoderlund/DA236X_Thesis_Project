@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+from .data_reader import LABELS
 import numpy as np
 from . import map
 
@@ -54,3 +55,30 @@ def visualize_all_classes(map: map.SinD_map, num_classes: int, data: np.ndarray,
             x, y = _d[0:input_len], _d[input_len:2*input_len]
             ax.plot(x, y, color=COLORS[_class], linewidth=1)
     plt.show()
+
+
+def classification_acc_per_class(true_labels: np.ndarray, predicted_labels: np.ndarray, plot: bool = True):
+    """ Get the accuracy per class
+
+        Parameters:
+        -----------
+        true_labels : np.ndarray
+            The true labels of the data
+        predicted_labels : np.ndarray
+            The predicted labels from the classifiers in classifiers
+        plot : bool
+            Plot the result
+    """
+    _acc_per_class = []
+    for _class in np.unique(true_labels):
+        _ids = np.where(true_labels == _class)
+        _preds = predicted_labels[_ids]
+        _truth = true_labels[_ids]
+        _acc_per_class.append(sum(_preds==_truth)/len(_preds)) 
+    if plot:
+        _x = [k for k,v in LABELS.items() if v in np.unique(true_labels)]
+        plt.bar(_x, _acc_per_class, align="center")
+        plt.xlabel("Class"), plt.ylabel("Test accuracy") 
+        plt.title("Classification accuracy for each class")
+        plt.show()
+    return _acc_per_class

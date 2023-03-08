@@ -1,6 +1,7 @@
 import pypolycontain as pp
 import numpy as np
 import matplotlib.pyplot as plt
+from shapely.geometry import Point, Polygon
 
 
 def minkowski_sum(z1: pp.zonotope, z2: pp.zonotope):
@@ -41,7 +42,23 @@ def linear_map(L: int, z: pp.zonotope):
     """
     return pp.zonotope(x=L*z.x, G=L*z.G)
 
-def visualize_zonotopes(z: list):
+
+def is_inside(z: pp.zonotope, point: np.ndarray):
+    """ Check if a point is inside a zonotope, z
+
+        Parameters:
+        -----------
+        z : pp.zonotope
+            The zonotope that will be checked against
+        point : np.ndararay
+            The point that will be checked against the 
+            zonotope, z
+    """
+    _poly = Polygon(pp.to_V(z)).buffer(2*np.finfo(float).eps)
+    return _poly.contains(Point(point))
+
+
+def visualize_zonotopes(z: list, show: bool = False):
     """ Visualize zonotopes
 
         Parameters:
@@ -51,5 +68,5 @@ def visualize_zonotopes(z: list):
             going to be visualized
     """
     pp.visualize(z, title="Zonotope visualization")
-    plt.show()
+    if show: plt.show()
 

@@ -32,7 +32,7 @@ def product(z1: pp.zonotope, z2: pp.zonotope):
     assert c_z.shape[0] == G_z.shape[0]
     return pp.zonotope(x=c_z, G=G_z)
 
-def linear_map(L: int, z: pp.zonotope):
+def linear_map(L, z: pp.zonotope):
     """ Perform linear map of a zonotope
 
         Parameters:
@@ -40,6 +40,7 @@ def linear_map(L: int, z: pp.zonotope):
         L : int
         z : pp.zonotope
     """
+    # TODO: Implement some asserts here depending on type(L)
     return pp.zonotope(x=L*z.x, G=L*z.G)
 
 

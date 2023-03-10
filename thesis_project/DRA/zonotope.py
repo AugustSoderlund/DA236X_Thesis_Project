@@ -15,6 +15,18 @@ def zonotope(c_z: np.ndarray, G_z: np.ndarray):
     assert c_z.shape[0] == G_z.shape[0]
     return pp.zonotope(x=c_z, G=G_z)
 
+def matrix_zonotope(C_M: np.ndarray, G_M: np.ndarray):
+    """ Zonotope creation 
+
+        Parameters:
+        -----------
+        c_z : np.ndarray
+            The center of the measurement
+        G_z : np.ndarray    
+            Generator matrix for zonotope
+    """
+    return zonotope(C_M, G_M)
+
 
 @dataclass
 class Zonotope:
@@ -31,6 +43,7 @@ class MatrixZonotope:
     G_M : np.ndarray
 
     def __post_init__(self):
+        assert len(self.C_M.shape) == 2
         assert self.C_M.shape[0] == self.G_M.shape[0]
         assert self.C_M.shape[1] == self.G_M[0].shape[0]
 
@@ -39,4 +52,4 @@ class MatrixZonotope:
 if __name__ == "__main__":
     x=np.array([1,1])
     G=np.array([[1,0,0],[0,1,0]])
-    Zonotope(x, G)
+    MatrixZonotope(x, G)

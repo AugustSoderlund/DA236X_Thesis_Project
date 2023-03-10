@@ -28,6 +28,8 @@ def matrix_zonotope(C_M: np.ndarray, G_M: np.ndarray):
     return zonotope(C_M, G_M)
 
 
+
+""" Deprecated """
 @dataclass
 class Zonotope:
     c_z : np.ndarray

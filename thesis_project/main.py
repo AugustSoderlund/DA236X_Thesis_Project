@@ -9,12 +9,20 @@ import os
 
 ROOT = os.getcwd()
 
-def load_data(file: str = "sind.pkl"):
+def load_data(file: str = "sind.pkl") -> np.ndarray:
     _f = open(ROOT + "/thesis_project/.datasets/" + file, "rb")
     return pickle.load(_f)
 
+def save_data(data: np.ndarray, file: str):
+    _f = open(ROOT + "/thesis_project/.datasets/" + file, "rb")
+    pickle.dump(data, _f)
+
 def split_data(data: np.ndarray, test_size: float = 0.2):
     return train_test_split(data, test_size=test_size)
+
+def label_data(sind: SinD, data: np.ndarray, input_len: int = 30, save: str = None) -> np.ndarray:
+    if save: save_data(data, save)
+    return sind.labels(data, input_len)
 
 
 if __name__ == "__main__":
@@ -38,6 +46,6 @@ if __name__ == "__main__":
     print("Accuracy (Decision tree):    ", str(sum(true_labels==p_dt)/len(p_dt)))
     print("Accuracy (Clustering):       ", str(sum(true_labels==p_km)/len(p_km)))
     print("Accuracy (AutoClustering):   ", str(sum(true_labels==p_km2)/len(p_km2)))
-    classification_acc_per_class(true_labels, p_dt, plot=True)
+    #classification_acc_per_class(true_labels, p_dt, plot=True)
     #visualize_all_classes(_sind.map, len(LABELS.keys()), train_data, p, 30)
-    #visualize_class(_sind.map, 0, test_data, p, 30)
+    visualize_class(_sind.map, 4, test_data, true_labels, 30)

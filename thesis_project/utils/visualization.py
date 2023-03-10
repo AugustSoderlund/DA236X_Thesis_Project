@@ -80,5 +80,5 @@ def classification_acc_per_class(true_labels: np.ndarray, predicted_labels: np.n
         plt.bar(_x, _acc_per_class, align="center")
         plt.xlabel("Class"), plt.ylabel("Test accuracy") 
         plt.title("Classification accuracy for each class")
-        plt.show()
+        plt.ylim(0,1), plt.show()
     return _acc_per_class

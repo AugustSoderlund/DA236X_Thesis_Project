@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from shapely.geometry import Point, Polygon
 
 
-def minkowski_sum(z1: pp.zonotope, z2: pp.zonotope):
+def minkowski_sum(z1: pp.zonotope, z2: pp.zonotope) -> pp.zonotope:
     """ Perform the minkowski sum of two zonotopes
 
         Parameters:
@@ -17,7 +17,7 @@ def minkowski_sum(z1: pp.zonotope, z2: pp.zonotope):
     assert c_z.shape[0] == G_z.shape[0]
     return pp.zonotope(x=c_z, G=G_z)
 
-def product(z1: pp.zonotope, z2: pp.zonotope):
+def product(z1: pp.zonotope, z2: pp.zonotope) -> pp.zonotope:
     """ Calculates the cartesian product of two zonotopes
 
         Parameters:
@@ -32,7 +32,7 @@ def product(z1: pp.zonotope, z2: pp.zonotope):
     assert c_z.shape[0] == G_z.shape[0]
     return pp.zonotope(x=c_z, G=G_z)
 
-def linear_map(L, z: pp.zonotope):
+def linear_map(L, z: pp.zonotope) -> pp.zonotope:
     """ Perform linear map of a zonotope
 
         Parameters:
@@ -44,7 +44,7 @@ def linear_map(L, z: pp.zonotope):
     return pp.zonotope(x=L*z.x, G=L*z.G)
 
 
-def is_inside(z: pp.zonotope, point: np.ndarray):
+def is_inside(z: pp.zonotope, point: np.ndarray) -> bool:
     """ Check if a point is inside a zonotope, z
 
         Parameters:
@@ -59,7 +59,7 @@ def is_inside(z: pp.zonotope, point: np.ndarray):
     return _poly.contains(Point(point))
 
 
-def visualize_zonotopes(z: list, show: bool = False):
+def visualize_zonotopes(z: list, show: bool = False) -> None:
     """ Visualize zonotopes
 
         Parameters:

@@ -1,3 +1,5 @@
+import tensorflow as tf
+from tensorflow.python import keras
 import numpy as np
 
 class DNN:
@@ -5,7 +7,7 @@ class DNN:
         self.__inp_size, self.__out_size, self.__nodes = input_size, output_size, nodes
 
     def __create_model(self):
-        pass
+        _model = keras.Sequential()
 
     def train(self):
         pass

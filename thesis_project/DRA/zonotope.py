@@ -2,7 +2,7 @@ from dataclasses import dataclass
 import pypolycontain as pp
 import numpy as np
 
-def zonotope(c_z: np.ndarray, G_z: np.ndarray):
+def zonotope(c_z: np.ndarray, G_z: np.ndarray) -> pp.zonotope:
     """ Zonotope creation 
 
         Parameters:
@@ -15,7 +15,7 @@ def zonotope(c_z: np.ndarray, G_z: np.ndarray):
     assert c_z.shape[0] == G_z.shape[0]
     return pp.zonotope(x=c_z, G=G_z)
 
-def matrix_zonotope(C_M: np.ndarray, G_M: np.ndarray):
+def matrix_zonotope(C_M: np.ndarray, G_M: np.ndarray) -> pp.zonotope:
     """ Zonotope creation 
 
         Parameters:
@@ -52,6 +52,10 @@ class MatrixZonotope:
 
 
 if __name__ == "__main__":
-    x=np.array([1,1])
+    x=np.array([0,0])
     G=np.array([[1,0,0],[0,1,0]])
-    MatrixZonotope(x, G)
+    x2 = np.array([0,0])
+    G2=np.array([[0,0,0],[0,0,0]])
+    z1 = zonotope(x,G)
+    z2 = zonotope(x2,G2)
+    

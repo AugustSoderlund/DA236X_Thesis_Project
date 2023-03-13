@@ -1,6 +1,8 @@
 import pypolycontain as pp
 import numpy as np
 from shapely.geometry import Polygon, LineString
+from typing import List
+from utils.data_reader import LABELS
 
 
 
@@ -17,13 +19,13 @@ def separate_data_to_class(data: np.ndarray, classification: np.ndarray, input_l
         input_len : int (default = 30)
             The input length for the chunks of each trajectory
     """
-    _class = [[]] * np.unique(classification)
+    _class = [[]] * len(LABELS)
     for i,_trajectory in enumerate(data):
         _t = _trajectory[0:2*input_len]
         _class[classification[i]].append(_t)
     return _class
 
-def create_io_state(data: np.ndarray, measurement: pp.zonotope, classification: int, input_len: int = 30) -> dict:
+def create_io_state(data: np.ndarray, measurement: pp.zonotope, classification: int, input_len: int = 30) -> List[np.ndarray]:
     """ Function to create D = (X-, X+, U-) in the reachability algorithm
 
         Parameters:
@@ -38,7 +40,6 @@ def create_io_state(data: np.ndarray, measurement: pp.zonotope, classification: 
         input_len : int (default = 30)
             The input length for the chunks of each trajectory
     """
-    D = {}
     X_m, X_p, U = np.array([]), np.array([]), np.array([])
     _ped_poly = Polygon(pp.to_V(measurement))
     _data = data[classification]
@@ -54,8 +55,7 @@ def create_io_state(data: np.ndarray, measurement: pp.zonotope, classification: 
             X_p = np.hstack([X_p, _X_p]) if X_p.size else X_p
             X_m = np.hstack([X_m, _X_m]) if X_m.size else X_m
             U = np.hstack([U, _U]) if U.size else U
-    D.update({"X-": X_m, "X+": X_p, "U-": U})
-    return D
+    return [U, X_p, X_m]
             
 
 

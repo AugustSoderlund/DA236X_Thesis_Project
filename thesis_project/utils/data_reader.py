@@ -55,6 +55,11 @@ class SinD:
             retrieves every input_len part of the trajectories and
             returns a numpy array containing the data inside
 
+        labels(data: np.ndarray, input_len: int) -> np.ndarray
+            labels all the data such that the ground truth is known, 
+            this assumes that certain areas/polygons in the map also
+            is known
+
         plot_dataset() -> None
             plots both a 2D plot of the historical locations along the
             trajectory, a 3D plot containing the velocity profile, and

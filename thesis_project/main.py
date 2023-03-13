@@ -1,11 +1,16 @@
 from sklearn.model_selection import train_test_split
 from utils.visualization import *
 from PTC.clustering import AutoCluster, Cluster
+from DRA.operations import visualize_zonotopes
+from DRA.reachability import LTI_reachability
+from PTC.input_state import *
 from PTC.classification import DecisionTree
 from utils.data_reader import SinD, LABELS
+from DRA.zonotope import zonotope
 import numpy as np
 import pickle
 import os
+
 
 ROOT = os.getcwd()
 
@@ -33,19 +38,21 @@ if __name__ == "__main__":
         data = _sind.data()
     train_data, test_data = split_data(data)
     labels = _sind.labels(train_data)
-    dt = DecisionTree(max_depth=40)
-    km = Cluster()
-    km2 = AutoCluster(n=4)
+    dt = DecisionTree(max_depth=20)
     dt.train(train_data, labels)
-    km.train(train_data, labels)
-    km2.train(train_data)
     p_dt = dt.predict(test_data)
-    p_km = km.predict(test_data)
-    p_km2 = km2.predict(test_data)
-    true_labels = _sind.labels(test_data)
-    print("Accuracy (Decision tree):    ", str(sum(true_labels==p_dt)/len(p_dt)))
-    print("Accuracy (Clustering):       ", str(sum(true_labels==p_km)/len(p_km)))
-    print("Accuracy (AutoClustering):   ", str(sum(true_labels==p_km2)/len(p_km2)))
+    #true_labels = _sind.labels(test_data)
+    #print("Accuracy (Decision tree):    ", str(sum(true_labels==p_dt)/len(p_dt)))
     #classification_acc_per_class(true_labels, p_dt, plot=True)
     #visualize_all_classes(_sind.map, len(LABELS.keys()), train_data, p, 30)
-    visualize_class(_sind.map, 4, test_data, true_labels, 30)
+    #visualize_class(_sind.map, 4, test_data, true_labels, 30)
+    d = separate_data_to_class(test_data, p_dt)
+    c_z = np.array([test_data[0][30],  test_data[0][60]])
+    G_z = np.array([[4,0,3],[0,4,-2]])
+    z = zonotope(c_z, G_z)
+    classification = p_dt[0]
+    U, X_p, X_m = create_io_state(d, z, classification)
+    z_w = zonotope(np.array([0,0]), np.array([[0.01,0],[0,0.01]]))
+    plt.scatter(X_p[0], X_p[1], c="r")
+    visualize_zonotopes([z], map=_sind.map, show=True)
+    #LTI_reachability(U, X_p, X_m, z, z_w, M_w, U_k)

@@ -6,7 +6,7 @@ from utils.data_reader import LABELS
 
 
 
-def separate_data_to_class(data: np.ndarray, classification: np.ndarray, input_len: int = 30):
+def separate_data_to_class(data: np.ndarray, classification: np.ndarray):
     """ Separate the entire dataset into a list[list] where each nested list contain 
         the trajectories for that specific class.
 
@@ -21,8 +21,7 @@ def separate_data_to_class(data: np.ndarray, classification: np.ndarray, input_l
     """
     _class = [[]] * len(LABELS)
     for i,_trajectory in enumerate(data):
-        _t = _trajectory[0:2*input_len]
-        _class[classification[i]].append(_t)
+        _class[classification[i]].append(_trajectory)
     return _class
 
 def create_io_state(data: np.ndarray, measurement: pp.zonotope, classification: int, input_len: int = 30) -> List[np.ndarray]:
@@ -52,9 +51,9 @@ def create_io_state(data: np.ndarray, measurement: pp.zonotope, classification: 
             _vx, _vy = _t[2*input_len:3*input_len], _t[3*input_len:4*input_len]
             _U = np.array([_vx, _vy])
             _U = _U[0:,:-1]
-            X_p = np.hstack([X_p, _X_p]) if X_p.size else X_p
-            X_m = np.hstack([X_m, _X_m]) if X_m.size else X_m
-            U = np.hstack([U, _U]) if U.size else U
+            X_p = np.hstack([X_p, _X_p]) if X_p.size else _X_p
+            X_m = np.hstack([X_m, _X_m]) if X_m.size else _X_m
+            U = np.hstack([U, _U]) if U.size else _U
     return [U, X_p, X_m]
             
 

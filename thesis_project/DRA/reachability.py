@@ -1,6 +1,9 @@
 import numpy as np
 import pypolycontain as pp
-from operations import *
+if __package__ or "." in __name__:
+    from .operations import *
+else:
+    from operations import *
 
 
 def LTI_reachability(U_minus: np.ndarray, X_plus: np.ndarray, X_minus: np.ndarray, 

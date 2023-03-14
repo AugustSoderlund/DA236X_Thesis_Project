@@ -25,6 +25,7 @@ def separate_data_to_class(data: np.ndarray, classification: np.ndarray):
     return _class
 
 def create_io_state(data: np.ndarray, measurement: pp.zonotope, classification: int, input_len: int = 30) -> List[np.ndarray]:
+    # TODO: Change such that this returns a dictionary with the input-state trajectories for each class separately that are near the pedestrian
     """ Function to create D = (X-, X+, U-) in the reachability algorithm
 
         Parameters:

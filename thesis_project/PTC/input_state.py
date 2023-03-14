@@ -1,7 +1,7 @@
 import pypolycontain as pp
 import numpy as np
 from shapely.geometry import Polygon, LineString
-from typing import List
+from typing import List, Union
 from utils.data_reader import LABELS
 
 
@@ -24,7 +24,7 @@ def separate_data_to_class(data: np.ndarray, classification: np.ndarray):
         _class[classification[i]].append(_trajectory)
     return _class
 
-def create_io_state(data: np.ndarray, measurement: pp.zonotope, classification: int, input_len: int = 30) -> List[np.ndarray]:
+def create_io_state(data: List[np.ndarray], measurement: pp.zonotope, classification: Union[int, List[int]], input_len: int = 30) -> List[np.ndarray]:
     # TODO: Change such that this returns a dictionary with the input-state trajectories for each class separately that are near the pedestrian
     """ Function to create D = (X-, X+, U-) in the reachability algorithm
 
@@ -34,15 +34,18 @@ def create_io_state(data: np.ndarray, measurement: pp.zonotope, classification: 
             Data from that has been precomputed by the separate_data_to_class function
         measurement : pp.zonotope
             The measurement from which the reachable sets should be calculated
-        classification : int
+        classification : int | List[int]
             The classification for the current pedestrian as an int corresponding 
-            to the class
+            to the class OR the list of all possible classes, in which case the
+            function returns all trajectories near the pedestrian regardless of
+            class
         input_len : int (default = 30)
             The input length for the chunks of each trajectory
     """
+    if type(classification) == list: _data = np.concatenate(data)
+    else: _data = data[classification]
     X_m, X_p, U = np.array([]), np.array([]), np.array([])
     _ped_poly = Polygon(pp.to_V(measurement))
-    _data = data[classification]
     for _t in _data:
         _x, _y = _t[0:input_len], _t[input_len:2*input_len]
         _line = LineString(list(zip(_x, _y)))
@@ -56,6 +59,8 @@ def create_io_state(data: np.ndarray, measurement: pp.zonotope, classification: 
             X_m = np.hstack([X_m, _X_m]) if X_m.size else _X_m
             U = np.hstack([U, _U]) if U.size else _U
     return [U, X_p, X_m]
+
+
             
 
 

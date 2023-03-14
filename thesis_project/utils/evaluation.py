@@ -1,10 +1,11 @@
 import numpy as np
 import pypolycontain as pp
 from shapely.geometry import Polygon
+from DRA.operations import optimize_vertices
 from typing import Union, List
 
 
-def zonotope_area(z: Union[pp.zonotope, Polygon]) -> float:
+def zonotope_area(z: Union[pp.zonotope, Polygon], simplify: bool = False) -> float:
     """ Calculate the area of a 2D zonotope
 
         Parameters:
@@ -13,7 +14,7 @@ def zonotope_area(z: Union[pp.zonotope, Polygon]) -> float:
             The zonotope/polygon representing the 
             final reachable set
     """
-    if type(z) == pp.zonotope: z = Polygon(pp.to_V(z))
+    if type(z) == pp.zonotope: z = Polygon(optimize_vertices(z, simplify=simplify))
     assert type(z) == Polygon
     return z.area
 

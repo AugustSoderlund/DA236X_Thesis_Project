@@ -24,8 +24,9 @@ def separate_data_to_class(data: np.ndarray, classification: np.ndarray):
         _class[classification[i]].append(_trajectory)
     return _class
 
-def create_io_state(data: List[np.ndarray], measurement: pp.zonotope, classification: Union[int, List[int]], input_len: int = 30) -> List[np.ndarray]:
-    # TODO: Change such that this returns a dictionary with the input-state trajectories for each class separately that are near the pedestrian
+def create_io_state(data: List[np.ndarray], measurement: pp.zonotope, vel: np.ndarray, classification: Union[int, List[int]], input_len: int = 30) -> List[np.ndarray]:
+    # TODO : Change such that this returns a dictionary with the input-state trajectories for each class separately that are near the pedestrian
+    # TODO : Maybe remove the angle constraint and implement 'forge_traj' in here instead of at DRA.operations
     """ Function to create D = (X-, X+, U-) in the reachability algorithm
 
         Parameters:
@@ -34,6 +35,8 @@ def create_io_state(data: List[np.ndarray], measurement: pp.zonotope, classifica
             Data from that has been precomputed by the separate_data_to_class function
         measurement : pp.zonotope
             The measurement from which the reachable sets should be calculated
+        vel : np.ndarray
+            Current velocity vector of measurement
         classification : int | List[int]
             The classification for the current pedestrian as an int corresponding 
             to the class OR the list of all possible classes, in which case the
@@ -46,10 +49,13 @@ def create_io_state(data: List[np.ndarray], measurement: pp.zonotope, classifica
     else: _data = data[classification]
     X_m, X_p, U = np.array([]), np.array([]), np.array([])
     _ped_poly = Polygon(pp.to_V(measurement))
+    _angle_set = np.array([np.arctan2(*vel)-np.pi/8, np.arctan2(*vel)+np.pi/8])
     for _t in _data:
         _x, _y = _t[0:input_len], _t[input_len:2*input_len]
+        _vx, _vy = _t[2*input_len:3*input_len], _t[3*input_len:4*input_len]
+        _v_avg = np.array([sum(_vx), sum(_vy)])
         _line = LineString(list(zip(_x, _y)))
-        if _line.within(_ped_poly):
+        if _line.within(_ped_poly) and __in_between(np.arctan2(*_v_avg), _angle_set):
             _X = np.array([_x, _y])
             _X_p, _X_m = _X[0:,1:], _X[0:,:-1]
             _vx, _vy = _t[2*input_len:3*input_len], _t[3*input_len:4*input_len]
@@ -59,6 +65,10 @@ def create_io_state(data: List[np.ndarray], measurement: pp.zonotope, classifica
             X_m = np.hstack([X_m, _X_m]) if X_m.size else _X_m
             U = np.hstack([U, _U]) if U.size else _U
     return [U, X_p, X_m]
+
+def __in_between(val: float, range: np.ndarray):
+    assert range.shape[0] == 2
+    return (val > range[0] and val < range[1])
 
 
             

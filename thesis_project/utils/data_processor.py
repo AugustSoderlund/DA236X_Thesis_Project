@@ -1,6 +1,6 @@
 from sklearn.model_selection import train_test_split
 from PTC.input_state import *
-from data_reader import SinD
+from .data_reader import SinD
 from typing import List
 import numpy as np
 import pickle

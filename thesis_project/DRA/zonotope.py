@@ -13,7 +13,7 @@ def zonotope(c_z: np.ndarray, G_z: np.ndarray) -> pp.zonotope:
             Generator matrix for zonotope
     """
     assert c_z.shape[0] == G_z.shape[0]
-    return pp.zonotope(x=c_z, G=G_z)
+    return pp.zonotope(x=c_z.reshape(c_z.shape[0], 1), G=G_z.reshape(G_z.shape[0], -1))
 
 def matrix_zonotope(C_M: np.ndarray, G_M: np.ndarray) -> pp.zonotope:
     """ Zonotope creation 
@@ -25,7 +25,8 @@ def matrix_zonotope(C_M: np.ndarray, G_M: np.ndarray) -> pp.zonotope:
         G_z : np.ndarray    
             Generator matrix for zonotope
     """
-    return zonotope(C_M, G_M)
+    assert C_M.shape[0] == G_M.shape[1]
+    return pp.zonotope(x=C_M, G=G_M)
 
 
 

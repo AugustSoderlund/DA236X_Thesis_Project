@@ -1,5 +1,6 @@
 import numpy as np
 import pypolycontain as pp
+from DRA.zonotope import zonotope
 from typing import List
 if __package__ or "." in __name__:
     from .operations import *
@@ -9,7 +10,7 @@ else:
 
 def LTI_reachability(U_minus: np.ndarray, X_plus: np.ndarray, X_minus: np.ndarray, 
                     X_0: pp.zonotope, Z_w: pp.zonotope, M_w: pp.zonotope, 
-                    U_k: pp.zonotope, N: int = 30) -> List[pp.zonotope]:
+                    U_k: Union[pp.zonotope, List[pp.zonotope]], N: int = 30, n: int = 50) -> List[pp.zonotope]:
     """ Linear time-invariant reachability analysis
 
         Parameters:
@@ -30,18 +31,23 @@ def LTI_reachability(U_minus: np.ndarray, X_plus: np.ndarray, X_minus: np.ndarra
             Process noise zonotope
         M_w : pp.zonotope
             Concatenation of multiple noise zonotopes
-        U_k : list
-            Input zonotope for each time step k
+        U_k : pp.zonotope
+            Input zonotope
+        N : int (default = 30)
+            Number of timesteps
+        n : int (default = 100)
+            Reduced order of reachable sets
     """
+    if type(U_k) == pp.zonotope: U_k = [U_k] * N
     R = [0] * N
-    R[0] = X_0
+    R[0] = reduce(X_0, order=n)
     _stacked = np.vstack([X_minus, U_minus])
-    M_sigma = np.matmul(X_plus - M_w.x, np.linalg.pinv(_stacked))
-    #M_sigma = (X_plus - M_w.x) * np.linalg.pinv(_stacked) # TODO: maybe exclude M_w.x, or find better way to represent it
+    _X = matrix_zonotope(X_plus - M_w.x, M_w.G)
+    M_sigma = product(_X, np.linalg.pinv(_stacked))
     for i in range(0, N-1):
-        R[i+1] = minkowski_sum(linear_map(M_sigma, product(R[i], U_k)), Z_w)
+        R[i+1] = minkowski_sum(product(M_sigma, cartesian_product(R[i], U_k[i])), Z_w)
+        R[i+1] = reduce(R[i+1], order=n)
     return R
-
 
 def bootstrap_RA(_args: dict, conf: np.ndarray, conf_thresh: float = 0.1, N: int = None):
     """ Linear time-invariant reachability analysis

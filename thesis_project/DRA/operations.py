@@ -10,6 +10,7 @@ from matplotlib.patches import Polygon as poly
 from scipy.spatial import ConvexHull
 import alphashape
 import platform
+from tqdm import tqdm
 
 if platform.system() == "Windows":
     use_pydrake = False
@@ -98,7 +99,7 @@ def create_M_w(total_size: int, Z: pp.zonotope = zonotope(np.array([0,0]), np.ar
     for i in range(Z.G.shape[1]):
         _vec = Z.G[:,i].reshape(Z.G.shape[0], 1)
         _G_w[_id] = np.concatenate((_vec, np.zeros(shape=(Z.G.shape[0], total_size-1))), axis=1)
-        for j in range(1, total_size):
+        for j in tqdm(range(1, total_size), desc="Creating noise zonotope"):
             _G_w[_id+j] = np.concatenate((_G_w[_id+j-1][:,1:], _G_w[_id+j-1][:,0].reshape(Z.G.shape[0],1)), axis=1)
         _id = _id + j + 1
     return matrix_zonotope(C_M=np.zeros(shape=(Z.G.shape[0], total_size)), G_M=np.array(_G_w))
@@ -222,7 +223,6 @@ def reduce(z: pp.zonotope, order: int):
 
 
 
-
 def compute_vertices(z: pp.zonotope):
     """ (DEPRECATED)
 
@@ -237,7 +237,6 @@ def compute_vertices(z: pp.zonotope):
     c_z = np.copy(z.x)
     for g_z in z.G.T:
         c_z = np.vstack([c_z+g_z, c_z-g_z])
-        print(c_z.shape)
     try:
         return c_z[ConvexHull(c_z).vertices], c_z
     except Exception as e:

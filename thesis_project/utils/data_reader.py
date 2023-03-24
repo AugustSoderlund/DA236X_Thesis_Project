@@ -1,12 +1,19 @@
+import time
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-from shapely.geometry import LineString
+from typing import Union, List
+from math import pi
+from descartes import PolygonPatch
+from shapely.geometry import LineString, Polygon, Point
+from shapely.ops import linemerge, unary_union, polygonize
 
 if __package__ or "." in __name__:
+    from .poly_process import crosswalk_poly_for_label as cpfl
     from .map import SinD_map
 else:
+    from poly_process import crosswalk_poly_for_label as cpfl
     from map import SinD_map
 from tqdm import tqdm
 import pickle
@@ -29,11 +36,13 @@ dict =  {
 
 
 ROOT = os.getcwd() + "/thesis_project/.datasets"
-LABELS = {"crossing": 0,
-          "not_crossing": 1,
-          "crossing_illegally": 2,
-          "crossing_cautious": 3,
-          "unknown": 4}
+LABELS = {"cross_left": 0,
+          "cross_right": 1,
+          "cross_straight": 2,
+          "cross_illegal": 3,
+          "crossing_now": 4,
+          "not_cross": 5,
+          "unknown": 6}
 
 
 class SinD:
@@ -70,6 +79,7 @@ class SinD:
         self._DATADIR = "SinD/Data"
         self._DATASETS = os.listdir("/".join([ROOT, self._DATADIR]))
         self._DATASETS.pop(self._DATASETS.index("mapfile-Tianjin.osm"))
+        #self._DATASETS = ["8_02_1"]
         self.map = SinD_map()
         self.__load_dataset(name+file_extension)
 
@@ -86,23 +96,93 @@ class SinD:
                 self.pedestrian_data.update({i: {"x": x, "y": y, "vx": vx, "vy": vy, "ax": ax, "ay": ay}}) 
                 i += 1  
 
-    def data(self, input_len: int = 30, save_data: bool = True):
+    def data(self, threshold: float = 0.5, input_len: int = 30, save_data: bool = True):
         _concat_data = []
         for _data in tqdm(self.pedestrian_data.values(), desc="Retreiving input"):
             _ped_data = []
             x, y, vx, vy, ax, ay = _data["x"], _data["y"], _data["vx"], _data["vy"], _data["ax"], _data["ay"]
-            for _i in range(input_len, len(_data["x"])):
+            v = np.linalg.norm(list(zip(vx, vy)), axis=1)
+            _id = np.where(v >= threshold)
+            x, y, vx, vy, ax, ay = x.iloc[_id], y.iloc[_id], vx.iloc[_id], vy.iloc[_id], ax.iloc[_id], ay.iloc[_id]
+            for _i in range(input_len, len(x)):
                 _extracted_data = np.array([*x.iloc[_i-input_len:_i], *y.iloc[_i-input_len:_i], 
                                        *vx.iloc[_i-input_len:_i], *vy.iloc[_i-input_len:_i], 
                                        *ax.iloc[_i-input_len:_i], *ay.iloc[_i-input_len:_i]])
-                _ped_data.append(_extracted_data)
+                _ped_data.append(_extracted_data) 
             _concat_data = [*_concat_data, *_ped_data] if len(_ped_data) > 0 else _concat_data
         if save_data:
             _f = open(ROOT + "/sind.pkl", "wb")
             pickle.dump(np.array(_concat_data), _f)
         return np.array(_concat_data)
     
-    def labels(self, data: np.ndarray, input_len: int = 30):
+    def labels(self, data: np.ndarray, input_len: int = 30, save_data: bool = True):
+        _labels = []
+        _crosswalks = cpfl(self.map)
+        for _data in tqdm(data, desc="Labeling data"):
+            _x, _y = _data[0:input_len], _data[input_len:2*input_len] 
+            _l = LineString(list(zip(_x, _y)))
+            _avg_angle = np.arctan2(sum(_y[2:6]-_y[0:4]), sum( _x[2:6]-_x[0:4]))
+            _avg_angle_end = np.arctan2(sum(_y[-6:-2]-_y[-4:]), sum(_x[-6:-2]-_x[-4:]))
+            if (_l.crosses(_crosswalks[0]) or _l.crosses(_crosswalks[2])) and not (_l.crosses(self.map.road_poly) or _l.crosses(self.map.intersection_poly) or _l.crosses(self.map.gap_poly)) and Point((_x[0], _y[0])).within(self.map.sidewalk_poly):
+                if (_avg_angle > pi/4 and _avg_angle < 3*pi/4) or (_avg_angle > -3*pi/4 and _avg_angle < -pi/4):
+                    _labels.append(LABELS["cross_straight"])
+                elif (_avg_angle >= -pi/4 and _avg_angle <= pi/4):
+                    if _y[0] < 16:
+                        _labels.append(LABELS["cross_left"])
+                    elif _y[0] >= 16:
+                        _labels.append(LABELS["cross_right"])
+                else:
+                    if _y[0] < 16:
+                        _labels.append(LABELS["cross_right"])
+                    elif _y[0] >= 16:
+                        _labels.append(LABELS["cross_left"])
+            elif (_l.crosses(_crosswalks[1]) or _l.crosses(_crosswalks[3])) and not (_l.crosses(self.map.road_poly) or _l.crosses(self.map.intersection_poly) or _l.crosses(self.map.gap_poly)) and Point((_x[0], _y[0])).within(self.map.sidewalk_poly):
+                if (_avg_angle > -pi/4 and _avg_angle < pi/4) or (_avg_angle > 3*pi/4 or _avg_angle < -3*pi/4):
+                    _labels.append(LABELS["cross_straight"])
+                elif (_avg_angle > pi/4 and _avg_angle < 3*pi/4):
+                    if _x[0] < 14:
+                        _labels.append(LABELS["cross_right"])
+                    elif _x[0] >= 14:
+                        _labels.append(LABELS["cross_left"])
+                else:
+                    if _x[0] < 14:
+                        _labels.append(LABELS["cross_left"])
+                    elif _x[0] >= 14:
+                        _labels.append(LABELS["cross_right"])
+            elif _l.within(self.map.crosswalk_poly): # or (Point((_x[0], _y[0])).within(self.map.sidewalk_poly) and _l.intersects(self.map.crosswalk_poly) and _l.intersects(self.map.sidewalk_poly) and not _l.intersects(self.map.road_poly)):
+                _labels.append(LABELS["crossing_now"])
+            elif _l.within(self.map.sidewalk_poly):
+                _labels.append(LABELS["not_cross"])
+            elif (_l.intersects(self.map.road_poly) or _l.intersects(self.map.intersection_poly) or _l.intersects(self.map.gap_poly)):
+                _labels.append(LABELS["cross_illegal"])
+            elif Point((_x[0], _y[0])).within(self.map.crosswalk_poly) and not (_l.intersects(self.map.road_poly) or _l.intersects(self.map.intersection_poly) or _l.intersects(self.map.gap_poly)):
+                if Point((_x[-1], _y[-1])).within(self.map.sidewalk_poly):
+                    _labels.append(LABELS["not_cross"])
+                else:
+                    _labels.append(LABELS["unknown"])
+            elif Point((_x[0], _y[0])).within(self.map.sidewalk_poly) and not (_l.intersects(self.map.road_poly) or _l.intersects(self.map.intersection_poly) or _l.intersects(self.map.gap_poly)):
+                if Point((_x[-1], _y[-1])).within(self.map.crosswalk_poly):
+                    _angle_diff = angle_between_angles(_avg_angle, _avg_angle_end) 
+                    if np.abs(_angle_diff) < pi/4 and ((_avg_angle > pi/4 and _avg_angle < 3*pi/4 and _avg_angle_end > pi/4 and _avg_angle_end < 3*pi/4) or (_avg_angle > -3*pi/4 and _avg_angle < -pi/4 and _avg_angle_end > -3*pi/4 and _avg_angle_end < -pi/4) or (_avg_angle > -pi/4 and _avg_angle < pi/4 and _avg_angle_end > -pi/4 and _avg_angle_end < pi/4) or ((_avg_angle > 3*pi/4 or _avg_angle < -3*pi/4) and (_avg_angle_end > 3*pi/4 or _avg_angle_end < -3*pi/4))):
+                        _labels.append(LABELS["cross_straight"])
+                    elif _angle_diff < -pi/4 and _angle_diff > -3*pi/4: 
+                        _labels.append(LABELS["cross_right"])
+                    elif _angle_diff > pi/4 and _angle_diff < 3*pi/4:
+                        _labels.append(LABELS["cross_left"])
+                    else:
+                        _labels.append(LABELS["unknown"])
+                else:
+                    _labels.append(LABELS["unknown"])
+            else:
+                _labels.append(LABELS["unknown"])
+        if save_data:
+            _f = open(ROOT + "/sind_labels.pkl", "wb")
+            pickle.dump(np.array(_labels), _f)
+        return np.array(_labels)
+
+
+    def __labels(self, data: np.ndarray, input_len: int = 30):
+        """ Legacy """
         _labels = []
         for _data in tqdm(data, desc="Labeling data"):
             _x, _y = _data[0:input_len], _data[input_len:2*input_len] 
@@ -152,6 +232,21 @@ class inD:
         self._DATASETS.pop(self._DATASETS.index("mapfile-Tianjin.osm"))
         #self.map = inD_map()
         self.__load_dataset(name+file_extension)
+
+
+def angle_between_angles(a1: float, a2: float):
+    """ Calculate interior angle between two angles
+
+        Parameters:
+        -----------
+        a1 : float
+            The first heading (angle)
+        a2 : float
+            The second heading (angle)
+    """
+    v = np.array([np.cos(a1), np.sin(a1)])
+    w = np.array([np.cos(a2), np.sin(a2)])
+    return np.math.atan2(np.linalg.det([v,w]),np.dot(v,w))
 
 
 

@@ -44,7 +44,7 @@ def LTI_reachability(U_minus: np.ndarray, X_plus: np.ndarray, X_minus: np.ndarra
     _stacked = np.vstack([X_minus, U_minus])
     _X = matrix_zonotope(X_plus - M_w.x, M_w.G)
     M_sigma = product(_X, np.linalg.pinv(_stacked))
-    for i in range(0, N-1):
+    for i in tqdm(range(0, N-1), desc="Calculating reachable sets"):
         R[i+1] = minkowski_sum(product(M_sigma, cartesian_product(R[i], U_k[i])), Z_w)
         R[i+1] = reduce(R[i+1], order=n)
     return R

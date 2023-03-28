@@ -102,7 +102,7 @@ def create_M_w(total_size: int, Z: pp.zonotope = zonotope(np.array([0,0]), np.ar
         for j in tqdm(range(1, total_size), desc="Creating noise zonotope"):
             _G_w[_id+j] = np.concatenate((_G_w[_id+j-1][:,1:], _G_w[_id+j-1][:,0].reshape(Z.G.shape[0],1)), axis=1)
         _id = _id + j + 1
-    return matrix_zonotope(C_M=np.zeros(shape=(Z.G.shape[0], total_size)), G_M=np.array(_G_w))
+    return matrix_zonotope(C_M=Z.x, G_M=np.array(_G_w))
 
 
 
@@ -142,9 +142,31 @@ def is_inside(z: pp.zonotope, point: np.ndarray) -> bool:
     _poly = Polygon(V).buffer(2*np.finfo(float).eps)
     return _poly.contains(Point(point))
 
-def forge_traj(x: np.ndarray, v: np.ndarray, c: int, map):
-    pass
+def input_zonotope(U: List[np.ndarray], N: int = 30) -> List[pp.zonotope]:
+    """ Calculate the input zonotope U_k for the reachability analysis
 
+        Parameters:
+        ------------
+        U : List[np.ndarray]
+            The input pre-processed by the split_io_to_trajs function
+        N : int (default = 30)
+            Time horizon of reachability analysis
+    """
+    g, max_len = len(U), max(len(u[0,:]) for u in U)
+    vx = np.ma.empty((g, max_len))
+    vy = np.ma.empty((g, max_len))
+    vx.mask, vy.mask = True, True
+    for i,u in enumerate(U):
+        #print(u, u.shape, u.shape[1], u[0,:].shape)
+        vx[i,0:u.shape[1]] = u[0,:]
+        vy[i,0:u.shape[1]] = u[1,:]
+    vx_mean, vy_mean = vx.mean(axis=0), vy.mean(axis=0)
+    vx_std, vy_std = vx.std(axis=0), vy.std(axis=0)
+    U_k = []
+    for i in range(0,N):
+        z = zonotope(c_z=np.array([vx_mean[i], vy_mean[i]]), G_z=np.array([[vx_std[i],0],[0,vy_std[i]]]))
+        U_k.append(z)
+    return U_k
 
 def optimize_vertices(z: pp.zonotope, n: int = 2, simplify: bool = True):
     """ Optimize the vertices calculations by creating an alphashape 

@@ -109,6 +109,3 @@ def structure_input_data(data: np.ndarray, labels: np.ndarray):
         new_l = [*new_l, *[_l]*_min_len]
     return np.array(new_d), np.array(new_l)
 
-
-#def create_trajectories(map, ped_measurement: np.ndarray, input_len: int = 30):
-#    _x, _y, _vx, _vy = ped_measurement[0:input_len], ped_measurement[input_len:2*input_len], ped_measurement[2*input_len:3*input_len], ped_measurement[3*input_len:4*input_len]

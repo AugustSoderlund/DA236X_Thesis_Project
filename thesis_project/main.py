@@ -4,6 +4,7 @@ from DRA.operations import visualize_zonotopes, optimize_vertices, create_M_w, i
 from DRA.reachability import LTI_reachability
 from PTC.input_state import *
 from PTC.classification import DecisionTree
+from PTC.dnn_classifier import DNN, one_hot_encode
 from utils.data_reader import SinD, LABELS
 from utils.data_processor import *
 from utils.evaluation import *
@@ -103,6 +104,18 @@ if __name__ == "__main__":
         labels = _sind.labels(data, input_len=input_len)
         train_data, test_data, train_labels, test_labels = split_data(data, labels)
     train_data, train_labels = structure_input_data(train_data, train_labels)
+    inp_size, out_size = train_data.shape[1], len(LABELS.keys())
+    dnn = DNN(input_size=inp_size, output_size=out_size, nodes=[300, 150])
+    dnn.train(train_data, train_labels, epochs=300)
+    test_labels_one_hot = one_hot_encode(test_labels)
+    test_labels_pred = dnn.predict(test_data)
+    _labels = []
+    for l in test_labels_pred:
+        _labels.append(np.argmax(l))
+    _labels = np.array(_labels)
+    classification_acc_per_class(test_labels, _labels)
+    dnn.plot_training()
+    time.sleep(100)
     d = separate_data_to_class(train_data, train_labels)
     c_z = np.array([-3.4, 28.3])
     G_z = np.array([[4,0,1],[0,2,1]])

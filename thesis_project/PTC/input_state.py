@@ -31,7 +31,7 @@ def separate_data_to_class(data: np.ndarray, classification: np.ndarray):
         _class[classification[i]].append(_trajectory)
     return _class
 
-def create_io_state(data: List[np.ndarray], measurement: pp.zonotope, vel: np.ndarray, classification: Union[int, List[int]], input_len: int = 30) -> List[np.ndarray]:
+def create_io_state(data: List[np.ndarray], measurement: pp.zonotope, vel: np.ndarray, classification: Union[int, List[int]], input_len: int = 30, drop_equal: bool = True) -> List[np.ndarray]:
     # TODO : Change such that this returns a dictionary with the input-state trajectories for each class separately that are near the pedestrian
     # TODO : Maybe remove the angle constraint and implement 'forge_traj' in here instead of at DRA.operations
     # TODO : Maybe remove points that are "behind" the pedestrian's zonotope
@@ -72,12 +72,12 @@ def create_io_state(data: List[np.ndarray], measurement: pp.zonotope, vel: np.nd
             X_p = np.hstack([X_p, _X_p]) if X_p.size else _X_p
             X_m = np.hstack([X_m, _X_m]) if X_m.size else _X_m
             U = np.hstack([U, _U]) if U.size else _U
-    #U, X_p, X_m = U.reshape(-1,2,input_len-1), X_p.reshape(-1,2,input_len-1), X_m.reshape(-1,2,input_len-1)
-    #U, X_p, X_m = sum(U)/U.shape[0], sum(X_p)/X_p.shape[0], sum(X_m)/X_m.shape[0]
-    U = __drop_equal(U)
-    X_p = __drop_equal(X_p)
-    X_m = __drop_equal(X_m)
-    return [U, X_p, X_m]
+    if drop_equal:
+        X_p, _ids = __drop_equal(X_p)
+        # TODO: Maybe revert these changes
+        X_m = np.delete(X_m, _ids, axis=1)
+        U_d = np.delete(U, _ids, axis=1)
+    return [U_d, X_p, X_m, U]
 
 def __in_between(val: float, range: np.ndarray):
     assert range.shape[0] == 2
@@ -91,45 +91,40 @@ def __drop_equal(arr: np.ndarray):
             _d.update({str(a):0})
         elif str(a) in _d:
             _ids = np.hstack((_ids, i))
-    return np.delete(arr, _ids, axis=1)
+    return np.delete(arr, _ids, axis=1), _ids
 
-# def generate_trajectories(map: SinD_map, num_of_trajs: int, measurement: pp.zonotope, vel: np.ndarray, input_len: int = 30, dt: float = 0.1):
-#     def add_noise(noise: float = 0.005):
-#         return random.uniform(-noise, noise)
-#     _p = Point(measurement.x)
-#     _areas = [map.crosswalk_poly, map.sidewalk_poly, map.gap_poly, map.intersection_poly, map.road_poly]
-#     _crosswalks = cpfl(map)
-#     _trajs = {}.fromkeys(LABELS.keys())
-#     [_trajs.update({l:[]}) for l in _trajs.keys()]
-#     if _p.within(map.intersection_poly) or _p.within(map.road_poly) or _p.within(map.gap_poly):
-#         noise = 0.009
-#         x, y = [_p.x], [_p.y]
-#         vx, vy = [vel[0]], [vel[1]]
-#         for i in range(1,input_len*10):
-#             x.append(x[i-1] + dt * vx[i-1] + add_noise(noise))
-#             y.append(y[i-1] + dt * vy[i-1] + add_noise(noise))
-#             vx.append(vx[i-1] + add_noise(noise))
-#             vy.append(vy[i-1] + add_noise(noise))
-#         _trajs[LABELS["cross_illegal"]].append(np.hstack((x,y))) 
-#     elif _p.within(map.sidewalk_poly):
-#         _dist1, _dist2 = 10000, 10000
-#         _id1, _id2 = None, None
-#         for i, _c in enumerate(_crosswalks):
-#             _d = _c.distance(_p)
-#             if _d < _dist1:
-#                 _dist1, _dist2 = _d, _dist1
-#                 _id1, _id2 = i, _id1
-#             elif _d > _dist1 and _d < _dist2:
-#                 _dist2 = _d
-#                 _id2 = i
-#     elif _p.within(map.crosswalk_poly):
-#         pass
-#     else:
-#         raise NameError
+def split_io_to_trajs(X_p: np.ndarray, X_m: np.ndarray, U: np.ndarray, threshold: float = 0.8, dropped: bool = True, N: int = 30):
+    """ Split the IO state (that drops equal points) into trajectories of different sizes
 
-
-            
-
-
-    
-
+        Parameters:
+        -----------
+        X_p : np.ndarray
+            X+ data
+        X_m : np.ndarray
+            X- data
+        U : np.ndarray
+            Inputs
+        threshold : float (default = 0.8)
+            Threshold for when regarding two points on the same trajectory
+        dropped : bool (default = True)
+            Set this to True if the equal points have been dropped from
+            the data
+        N : int (default = 30)
+            Time horizon of the reachability analysis
+    """
+    _X_p, _X_m, _U = [], [], []
+    if dropped:
+        x_prev = X_p[:,0]
+        i_prev = 0
+        for i,x in enumerate(X_p[:,1:].T):
+            _dist = np.linalg.norm(x-x_prev)
+            x_prev = x
+            if _dist > threshold:
+                _X_p.append(X_p[:,i_prev:i+1])
+                _X_m.append(X_m[:,i_prev:i+1])
+                _U.append(U[:,i_prev:i+1])
+                i_prev = i+1
+    else:
+        for i in range(N, U.shape[1]+1, N):
+            _U.append(U[:,i-N:i])
+    return _X_p, _X_m, _U

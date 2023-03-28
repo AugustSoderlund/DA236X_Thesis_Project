@@ -347,20 +347,10 @@ def visualize(list_of_objects: Union[List[pp.zonotope], List[np.ndarray]], ax: p
         ax.set_ylim([np.min(x_all[:,1])-a,a+np.max(x_all[:,1])])
     if grid:
         ax.grid(color=(0,0,0), linestyle='--', linewidth=0.3)
-    ax.set_title(title, FontSize=TitleSize)
-    ax.set_xlabel("$x_1$", FontSize=FontSize)
-    ax.set_ylabel("$x_2$", FontSize=FontSize)
+    ax.set_title(title)
+    ax.set_xlabel("$x_1$")
+    ax.set_ylabel("$x_2$")
     if equal_axis:
         ax.axis('equal')
 
-
-class A:
-    def __init__(self):
-        pass
-
-    def __add__(self, B):
-        pass
-
-    def __mult__(self):
-        pass
 

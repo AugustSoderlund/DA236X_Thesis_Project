@@ -1,6 +1,7 @@
 from DRA.zonotope import zonotope, matrix_zonotope
-from DRA.operations import create_M_w, product, minkowski_sum, cartesian_product, reduce, visualize_zonotopes
+from DRA.operations import create_M_w, product, minkowski_sum, cartesian_product, reduce, visualize_zonotopes, _projection
 from DRA.reachability import LTI_reachability
+from utils.evaluation import zonotope_area
 import matplotlib.pyplot as plt
 from control.matlab import * 
 import numpy as np
@@ -70,7 +71,7 @@ if __name__ == "__main__":
         for i in range(0,steps):
             utraj[j,i] = u[index]
             c = sys_d.A*x[j:j+dim_x,i].reshape(x0.shape[0],1) + sys_d.B*u[index] + randPoint(W)
-            x[j:j+dim_x,i+1] = c.reshape(x0.shape[0],);      
+            x[j:j+dim_x,i+1] = c.reshape(x0.shape[0],)      
             index += 1
 
     # concatenate the data trajectories 
@@ -91,6 +92,12 @@ if __name__ == "__main__":
     U_full = u_mean_vec_0[:,0:totalsamples]
     X_0T = x_meas_vec_0[:,0:totalsamples]
     X_1T = x_meas_vec_1[:,0:totalsamples]
+
+    for i in range(round(totalsamples/initpoints), X_1T[0,:].shape[0]):
+        for j in range(0,X_0T.shape[0]):
+            X_0T[j,i] = X_0T[j,i] + 1
+            X_1T[j,i] = X_1T[j,i] + 1
+            #U_full[j,i] = U_full[j,i] + 1
 
     plt.plot(X_1T[0,:], X_1T[1,:])
     #plt.show()
@@ -140,6 +147,10 @@ if __name__ == "__main__":
     X_data = LTI_reachability(U_full, X_1T, X_0T, X0, W, Wmatzono, U, N=totalsteps+1, n=400)
     for i in range(len(X_data)):
         X_data[i].color = [0.1,0.1,0.6]
+    R = _projection(X_data[-1], [0,1])
+    print("Area of zonotope: ", round(zonotope_area(R), 4), " m^2")
 
 
-    visualize_zonotopes([*X_data, *X_model], show=True)
+    visualize_zonotopes([*X_data, *X_model], show=False)
+    #plt.plot(X_1T[0,:], X_1T[1,:])
+    plt.show()

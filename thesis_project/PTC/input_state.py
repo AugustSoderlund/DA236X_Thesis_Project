@@ -31,7 +31,7 @@ def separate_data_to_class(data: np.ndarray, classification: np.ndarray):
         _class[classification[i]].append(_trajectory)
     return _class
 
-def create_io_state(data: List[np.ndarray], measurement: pp.zonotope, vel: np.ndarray, classification: Union[int, List[int]], input_len: int = 30, drop_equal: bool = True) -> List[np.ndarray]:
+def create_io_state(data: List[np.ndarray], measurement: pp.zonotope, vel: np.ndarray, classification: Union[int, List[int]], input_len: int = 30, drop_equal: bool = True, angle_filter: bool = True) -> List[np.ndarray]:
     # TODO : Change such that this returns a dictionary with the input-state trajectories for each class separately that are near the pedestrian
     # TODO : Maybe remove the angle constraint and implement 'forge_traj' in here instead of at DRA.operations
     # TODO : Maybe remove points that are "behind" the pedestrian's zonotope
@@ -57,7 +57,7 @@ def create_io_state(data: List[np.ndarray], measurement: pp.zonotope, vel: np.nd
     else: _data = data[classification]
     X_m, X_p, U = np.array([]), np.array([]), np.array([])
     _ped_poly = Polygon(pp.to_V(measurement))
-    _angle_set = np.array([np.arctan2(*vel)-np.pi/8, np.arctan2(*vel)+np.pi/8])
+    _angle_set = np.array([np.arctan2(*vel)-np.pi/8, np.arctan2(*vel)+np.pi/8]) if angle_filter else np.array([np.arctan2(*vel)-np.pi, np.arctan2(*vel)+np.pi])
     for _t in _data:
         _x, _y = _t[0:input_len], _t[input_len:2*input_len]
         _vx, _vy = _t[2*input_len:3*input_len], _t[3*input_len:4*input_len]

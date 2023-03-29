@@ -79,7 +79,6 @@ class SinD:
         self._DATADIR = "SinD/Data"
         self._DATASETS = os.listdir("/".join([ROOT, self._DATADIR]))
         self._DATASETS.pop(self._DATASETS.index("mapfile-Tianjin.osm"))
-        #self._DATASETS = ["8_02_1"]
         self.map = SinD_map()
         self.__load_dataset(name+file_extension)
 
@@ -96,13 +95,13 @@ class SinD:
                 self.pedestrian_data.update({i: {"x": x, "y": y, "vx": vx, "vy": vy, "ax": ax, "ay": ay}}) 
                 i += 1  
 
-    def data(self, threshold: float = 0.5, input_len: int = 30, save_data: bool = True):
+    def data(self, threshold: float = 0.5, input_len: int = 30, save_data: bool = True, velocity_filter: bool = True):
         _concat_data = []
         for _data in tqdm(self.pedestrian_data.values(), desc="Retreiving input"):
             _ped_data = []
             x, y, vx, vy, ax, ay = _data["x"], _data["y"], _data["vx"], _data["vy"], _data["ax"], _data["ay"]
             v = np.linalg.norm(list(zip(vx, vy)), axis=1)
-            _id = np.where(v >= threshold)
+            _id = np.where(v >= threshold) if velocity_filter else np.where(v >= -1)
             x, y, vx, vy, ax, ay = x.iloc[_id], y.iloc[_id], vx.iloc[_id], vy.iloc[_id], ax.iloc[_id], ay.iloc[_id]
             for _i in range(input_len, len(x)):
                 _extracted_data = np.array([*x.iloc[_i-input_len:_i], *y.iloc[_i-input_len:_i], 

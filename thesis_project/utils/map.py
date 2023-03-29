@@ -50,7 +50,7 @@ class SinD_map:
         return osmhandler.osm_data
     
     def plot_areas(self, highlight_areas: list = ["crosswalk"], alpha: float = 0.2):
-        _, ax = plt.subplots()
+        fig, ax = plt.subplots()
         _points = self.get_area("")
         ax.scatter(*zip(*_points), alpha=0) # To get bounds correct
         _attr = dir(self)
@@ -61,7 +61,7 @@ class SinD_map:
         _colors[_ids] = "g"
         for i, _poly in enumerate(_polys):
             ax.add_patch(PolygonPatch(eval(".".join(["self", _poly])), alpha=alpha, color=_colors[i]))
-        return ax
+        return ax, fig
     
     def get_area(self, regex: str = "crosswalk", tag_key: str = "name"):
         _ways, _nodes, _locs = [], [], []

@@ -2,12 +2,17 @@ import tensorflow as tf
 from tensorflow import keras
 import numpy as np
 import math
+import os
 import matplotlib.pyplot as plt
 
 if __package__ or "." in __name__:
     from utils.data_reader import LABELS
 else:
     from ..utils.data_reader import LABELS
+
+
+ROOT = os.getcwd() + "/thesis_project/.classifier"
+
 
 
 def one_hot_encode(Y: np.ndarray):
@@ -27,9 +32,10 @@ def one_hot_encode(Y: np.ndarray):
 
 
 class DNN:
-    def __init__(self, input_size: np.ndarray, output_size: np.ndarray, nodes: np.ndarray = [200, 100], batch_size: int = 100):
+    def __init__(self, input_size: np.ndarray, output_size: np.ndarray, nodes: np.ndarray = [200, 100], batch_size: int = 100, load: bool = False):
         self._inp_size, self._out_size, self._nodes, self._batch_size = input_size, output_size, nodes, batch_size
-        self.__create_model()
+        if load: self.load()
+        else: self.__create_model()
 
     def __create_model(self):
         """ Creates the TensorFlow model """
@@ -75,7 +81,15 @@ class DNN:
         x = tf.keras.utils.normalize(x, axis=2)
         _v = math.floor(x.shape[0]*val_size/self._batch_size) * self._batch_size
         _x, _y, x_val, y_val = x[0:-_v,:,:], y[0:-_v,:], x[_v:,:,:], y[_v:,:]
-        self.__history = self._model.fit(_x, _y, self._batch_size, epochs, validation_data=(x_val, y_val))
+        cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=ROOT+"/weights.ckpt",
+                                                         save_weights_only=True,
+                                                         verbose=1)
+        self.__history = self._model.fit(_x, _y, 
+                                         self._batch_size, 
+                                         epochs, 
+                                         validation_data=(x_val, y_val), 
+                                         callbacks=[cp_callback])
+        
 
     def predict(self, x: np.ndarray):
         """ Predict the mode of trajectory x """
@@ -89,6 +103,10 @@ class DNN:
         self._model.compile(optimizer="adam", 
                             loss=tf.keras.losses.CategoricalCrossentropy(), 
                             metrics=[keras.metrics.TopKCategoricalAccuracy(k=1, name="acc")])
+        
+    def load(self, weight_path: str = ROOT + "/weights.ckpt"):
+        self.__create_model()
+        self._model.load_weights(weight_path)
 
     def plot_training(self):
         """ Plot the training losses and accuracies """

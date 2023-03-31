@@ -12,6 +12,11 @@ import alphashape
 import platform
 from tqdm import tqdm
 
+if __package__ or "." in __name__:
+    from utils.map import SinD_map
+else:
+    from ..utils.map import SinD_map
+
 if platform.system() == "Windows":
     use_pydrake = False
 else:
@@ -83,7 +88,7 @@ def product(f1: Union[pp.zonotope, np.ndarray], f2: Union[pp.zonotope, np.ndarra
 
 
     
-def create_M_w(total_size: int, Z: pp.zonotope = zonotope(np.array([0,0]), np.array([0.05,0.05]))) -> pp.zonotope:
+def create_M_w(total_size: int, Z: pp.zonotope = zonotope(np.array([0,0]), np.array([0.05,0.05])), disable_progress_bar: bool = False) -> pp.zonotope:
     """ Function to construct the matrix zonotope M_w
 
         Parameters:
@@ -99,7 +104,7 @@ def create_M_w(total_size: int, Z: pp.zonotope = zonotope(np.array([0,0]), np.ar
     for i in range(Z.G.shape[1]):
         _vec = Z.G[:,i].reshape(Z.G.shape[0], 1)
         _G_w[_id] = np.concatenate((_vec, np.zeros(shape=(Z.G.shape[0], total_size-1))), axis=1)
-        for j in tqdm(range(1, total_size), desc="Creating noise zonotope"):
+        for j in tqdm(range(1, total_size), desc="Creating noise zonotope", disable=disable_progress_bar):
             _G_w[_id+j] = np.concatenate((_G_w[_id+j-1][:,1:], _G_w[_id+j-1][:,0].reshape(Z.G.shape[0],1)), axis=1)
         _id = _id + j + 1
     return matrix_zonotope(C_M=Z.x, G_M=np.array(_G_w))
@@ -266,7 +271,7 @@ def compute_vertices(z: pp.zonotope):
         
 
 
-def visualize_zonotopes(z: Union[List[pp.zonotope], List[np.ndarray]], map = None, show: bool = False, scale_axes: bool = False) -> None:
+def visualize_zonotopes(z: Union[List[pp.zonotope], List[np.ndarray]], map: Union[SinD_map, plt.Axes] = None, show: bool = False, scale_axes: bool = False, plot_vertices: bool = True) -> plt.Axes:
     """ Visualize zonotopes
 
         Parameters:
@@ -284,9 +289,9 @@ def visualize_zonotopes(z: Union[List[pp.zonotope], List[np.ndarray]], map = Non
             after plotting of if user writes plt.show() in
             script where function is used
     """
-    map_ax = None
-    if map: map_ax = map.plot_areas()
-    visualize(z, ax=map_ax, title="Zonotope visualization", scale_axes=scale_axes)
+    if type(map) == SinD_map: map_ax, _ = map.plot_areas()
+    else: map_ax = map
+    visualize(z, ax=map_ax, title="Zonotope visualization", scale_axes=scale_axes, show_vertices=plot_vertices)
     if show: plt.show()
 
 
@@ -307,9 +312,9 @@ def _projection(P,tuple_of_projection_dimensions):
     return pp.affine_map( p_matrix, P)
 
 
-def visualize(list_of_objects: Union[List[pp.zonotope], List[np.ndarray]], ax: plt.axes = None, alpha: float = 0.8, 
-              title: str = r'pypolycontain visualization', show_vertices: bool = True, TitleSize: int = 15, 
-              FontSize: int = 15, equal_axis: bool = False, grid: bool = True, scale_axes: bool = False):
+def visualize(list_of_objects: Union[List[pp.zonotope], List[np.ndarray]], ax: plt.Axes = None, alpha: float = 0.8, 
+              title: str = r'pypolycontain visualization', show_vertices: bool = True, equal_axis: bool = False,
+              grid: bool = True, scale_axes: bool = False) -> plt.Axes:
     r"""
     Visualization.
     

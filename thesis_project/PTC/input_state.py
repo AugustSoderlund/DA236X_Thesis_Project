@@ -14,7 +14,7 @@ else:
 
 
 
-def separate_data_to_class(data: np.ndarray, classification: np.ndarray):
+def separate_data_to_class(data: np.ndarray, classification: np.ndarray) -> np.ndarray:
     """ Separate the entire dataset into a list[list] where each nested list contain 
         the trajectories for that specific class.
 
@@ -29,7 +29,7 @@ def separate_data_to_class(data: np.ndarray, classification: np.ndarray):
     for _i in range(len(_class)): _class[_i] = []
     for i,_trajectory in enumerate(data):
         _class[classification[i]].append(_trajectory)
-    return _class
+    return np.array(_class)
 
 def create_io_state(data: List[np.ndarray], measurement: pp.zonotope, vel: np.ndarray, classification: Union[int, List[int]], input_len: int = 30, drop_equal: bool = True, angle_filter: bool = True) -> List[np.ndarray]:
     # TODO : Change such that this returns a dictionary with the input-state trajectories for each class separately that are near the pedestrian
@@ -85,6 +85,7 @@ def __in_between(val: float, range: np.ndarray):
 
 def __drop_equal(arr: np.ndarray):
     _d, _ids = {}, np.array([], dtype=int)
+    if len(arr.shape) == 1: return arr, _ids
     assert arr.shape[1] > arr.shape[0]
     for i, a in enumerate(arr.T):
         if str(a) not in _d:
@@ -127,4 +128,8 @@ def split_io_to_trajs(X_p: np.ndarray, X_m: np.ndarray, U: np.ndarray, threshold
     else:
         for i in range(N, U.shape[1]+1, N):
             _U.append(U[:,i-N:i])
+    if len(_U) == 0:
+        _X_p.append(X_p[:,i_prev:i+1])
+        _X_m.append(X_m[:,i_prev:i+1])
+        _U.append(U[:,i_prev:i+1])
     return _X_p, _X_m, _U

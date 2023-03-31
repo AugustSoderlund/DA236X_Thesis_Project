@@ -1,6 +1,9 @@
+import warnings
+warnings.filterwarnings("ignore")
+
 import time
 from utils.visualization import *
-from DRA.operations import visualize_zonotopes, optimize_vertices, create_M_w, input_zonotope
+from DRA.operations import visualize_zonotopes, create_M_w, input_zonotope
 from DRA.reachability import LTI_reachability
 from PTC.input_state import *
 from PTC.classification import DecisionTree
@@ -10,7 +13,7 @@ from utils.data_processor import *
 from utils.evaluation import *
 from DRA.zonotope import zonotope
 import numpy as np
-from descartes import PolygonPatch
+from utils.simulation import simulate
 from shapely.ops import linemerge, unary_union, polygonize
 
 
@@ -89,13 +92,13 @@ def _cut_poly_by_line(polygon: Polygon, line: LineString):
     return list(polygons)
 
 
-if __name__ == "__main__":
+def _backup():
     input_len = 90
     a = input_len-1
     N = 30
     #func()
     _sind = SinD()
-    if True:#input("Load? (y/n)") == "y":
+    if input_len == 90:#input("Load? (y/n)") == "y":
         data = load_data()
         labels = load_data("sind_labels.pkl")
         train_data, test_data, train_labels, test_labels = split_data(data, labels)
@@ -106,7 +109,7 @@ if __name__ == "__main__":
     train_data, train_labels = structure_input_data(train_data, train_labels)
     inp_size, out_size = train_data.shape[1], len(LABELS.keys())
     dnn = DNN(input_size=inp_size, output_size=out_size, nodes=[300, 150])
-    dnn.train(train_data, train_labels, epochs=300)
+    dnn.train(train_data, train_labels, epochs=10)
     test_labels_one_hot = one_hot_encode(test_labels)
     test_labels_pred = dnn.predict(test_data)
     _labels = []
@@ -115,8 +118,9 @@ if __name__ == "__main__":
     _labels = np.array(_labels)
     classification_acc_per_class(test_labels, _labels)
     dnn.plot_training()
-    time.sleep(100)
+    #time.sleep(100)
     d = separate_data_to_class(train_data, train_labels)
+    print(len(d), d[0].shape)
     c_z = np.array([-3.4, 28.3])
     G_z = np.array([[4,0,1],[0,2,1]])
     #G_z = np.array([[0.5,0,0.25],[0,0.5,0.15]])
@@ -220,7 +224,10 @@ if __name__ == "__main__":
     print("Area of zonotope: ", round(zonotope_area(R), 4), " m^2")
     print("Area of (baseline) zonotope: ", round(zonotope_area(R_base), 4), " m^2")
     z = zonotope(c_z, G_z)
-    visualize_zonotopes([z, R, R_base], map=_sind.map, show=False)
+    t = time.time()
+    axxxx, _ = _sind.map.plot_areas()
+    visualize_zonotopes([z, R, R, R, R, R_base], map=axxxx, show=False)
+    print(time.time()-t)
     x, y = [],[]
     _ped_poly = Polygon(pp.to_V(z))
     # for i,p in enumerate(X_p_all.T):
@@ -300,3 +307,8 @@ if __name__ == "__main__":
     #ax.add_patch(PolygonPatch(p2, alpha=0.2, color="g"))
     plt.show()
     #plt.show() """
+
+if __name__ == "__main__":
+    _map = SinD_map()
+    simulate(_map, True, input_len=90, _N=30, frames=500, load_dnn=False, load_RA=True, frequency=None, use_multiprocessing=False, plot_future_locs=True)
+    #_backup()

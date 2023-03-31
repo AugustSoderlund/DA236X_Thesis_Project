@@ -10,7 +10,8 @@ else:
 
 def LTI_reachability(U_minus: np.ndarray, X_plus: np.ndarray, X_minus: np.ndarray, 
                     X_0: pp.zonotope, Z_w: pp.zonotope, M_w: pp.zonotope, 
-                    U_k: Union[pp.zonotope, List[pp.zonotope]], N: int = 30, n: int = 50) -> List[pp.zonotope]:
+                    U_k: Union[pp.zonotope, List[pp.zonotope]], N: int = 30, 
+                    n: int = 50, disable_progress_bar: bool = False) -> List[pp.zonotope]:
     """ Linear time-invariant reachability analysis
 
         Parameters:
@@ -44,7 +45,7 @@ def LTI_reachability(U_minus: np.ndarray, X_plus: np.ndarray, X_minus: np.ndarra
     _stacked = np.vstack([X_minus, U_minus])
     _X = matrix_zonotope(X_plus - M_w.x, M_w.G)
     M_sigma = product(_X, np.linalg.pinv(_stacked))
-    for i in tqdm(range(0, N-1), desc="Calculating reachable sets"):
+    for i in tqdm(range(0, N-1), desc="Calculating reachable sets", disable=disable_progress_bar):
         R[i+1] = minkowski_sum(product(M_sigma, cartesian_product(R[i], U_k[i])), Z_w)
         R[i+1] = reduce(R[i+1], order=n)
     return R

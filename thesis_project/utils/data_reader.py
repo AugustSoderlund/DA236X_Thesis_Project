@@ -75,10 +75,11 @@ class SinD:
             a 3D plot for the acceleration profile
     """
 
-    def __init__(self, name: str = "Ped_smoothed_tracks", file_extension: str = ".csv"):
+    def __init__(self, name: str = "Ped_smoothed_tracks", file_extension: str = ".csv", drop_file: str = None):
         self._DATADIR = "SinD/Data"
         self._DATASETS = os.listdir("/".join([ROOT, self._DATADIR]))
         self._DATASETS.pop(self._DATASETS.index("mapfile-Tianjin.osm"))
+        if drop_file: self._DATASETS.pop(self._DATASETS.index(drop_file))
         self.map = SinD_map()
         self.__load_dataset(name+file_extension)
 
@@ -114,10 +115,10 @@ class SinD:
             pickle.dump(np.array(_concat_data), _f)
         return np.array(_concat_data)
     
-    def labels(self, data: np.ndarray, input_len: int = 30, save_data: bool = True):
+    def labels(self, data: np.ndarray, input_len: int = 30, save_data: bool = True, disable_progress_bar: bool = False):
         _labels = []
         _crosswalks = cpfl(self.map)
-        for _data in tqdm(data, desc="Labeling data"):
+        for _data in tqdm(data, desc="Labeling data", disable=disable_progress_bar):
             _x, _y = _data[0:input_len], _data[input_len:2*input_len] 
             _l = LineString(list(zip(_x, _y)))
             _avg_angle = np.arctan2(sum(_y[2:6]-_y[0:4]), sum( _x[2:6]-_x[0:4]))

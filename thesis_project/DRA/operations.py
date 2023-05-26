@@ -1,5 +1,6 @@
 from typing import List, Union
 from matplotlib.collections import PatchCollection
+from matplotlib.lines import Line2D
 import pypolycontain as pp
 from DRA.zonotope import zonotope, matrix_zonotope
 import numpy as np
@@ -126,7 +127,7 @@ def linear_map(L: Union[int, np.ndarray], z: pp.zonotope, from_side: str = "left
         if from_side == "left": assert L.shape[1] == (z.x.shape[0] and z.G.shape[0]); _z = pp.zonotope(x=np.matmul(L,z.x), G=np.matmul(L,z.G))
         elif from_side == "right": assert L.shape[0] == (z.x.shape[1] and z.G.shape[1]); _z = pp.zonotope(x=np.matmul(z.x,L), G=np.matmul(z.G,L))
         else: print("Only 'left' and 'right' are viable args"); raise TypeError
-    elif type(L) == int: _z = pp.zonotope(x=L*z.x, G=L*z.G)
+    elif type(L) == int or type(L) == float: _z = pp.zonotope(x=L*z.x, G=L*z.G)
     return _z
 
 
@@ -147,7 +148,7 @@ def is_inside(z: pp.zonotope, point: np.ndarray) -> bool:
     _poly = Polygon(V).buffer(2*np.finfo(float).eps)
     return _poly.contains(Point(point))
 
-def input_zonotope(U: List[np.ndarray], N: int = 30) -> List[pp.zonotope]:
+def input_zonotope(U: List[np.ndarray], N: int = 30, gamma: str = "std") -> List[pp.zonotope]:
     """ Calculate the input zonotope U_k for the reachability analysis
 
         Parameters:
@@ -166,7 +167,9 @@ def input_zonotope(U: List[np.ndarray], N: int = 30) -> List[pp.zonotope]:
         vx[i,0:u.shape[1]] = u[0,:]
         vy[i,0:u.shape[1]] = u[1,:]
     vx_mean, vy_mean = vx.mean(axis=0), vy.mean(axis=0)
-    vx_std, vy_std = vx.std(axis=0), vy.std(axis=0)
+    if gamma == "std": vx_std, vy_std = vx.std(axis=0), vy.std(axis=0)
+    elif gamma == "max": vx_std, vy_std = vx.max(axis=0), vy.max(axis=0)
+    else: raise ValueError
     U_k = []
     for i in range(0,N):
         z = zonotope(c_z=np.array([vx_mean[i], vy_mean[i]]), G_z=np.array([[vx_std[i],0],[0,vy_std[i]]]))
@@ -271,7 +274,8 @@ def compute_vertices(z: pp.zonotope):
         
 
 
-def visualize_zonotopes(z: Union[List[pp.zonotope], List[np.ndarray]], map: Union[SinD_map, plt.Axes] = None, show: bool = False, scale_axes: bool = False, plot_vertices: bool = True) -> plt.Axes:
+def visualize_zonotopes(z: Union[List[pp.zonotope], List[np.ndarray]], map: Union[SinD_map, plt.Axes] = None, show: bool = False, 
+                        scale_axes: bool = False, plot_vertices: bool = True, _labels: list = None, _markers: list = None, title: str = "Zonotope visualization") -> plt.Axes:
     """ Visualize zonotopes
 
         Parameters:
@@ -291,7 +295,7 @@ def visualize_zonotopes(z: Union[List[pp.zonotope], List[np.ndarray]], map: Unio
     """
     if type(map) == SinD_map: map_ax, _ = map.plot_areas()
     else: map_ax = map
-    visualize(z, ax=map_ax, title="Zonotope visualization", scale_axes=scale_axes, show_vertices=plot_vertices)
+    visualize(z, ax=map_ax, title=title, scale_axes=scale_axes, show_vertices=plot_vertices, _labels=_labels, markers=_markers)
     if show: plt.show()
 
 
@@ -312,9 +316,12 @@ def _projection(P,tuple_of_projection_dimensions):
     return pp.affine_map( p_matrix, P)
 
 
-def visualize(list_of_objects: Union[List[pp.zonotope], List[np.ndarray]], ax: plt.Axes = None, alpha: float = 0.8, 
+
+__markers = ["o", "s", "x", "p", "v", "_", "|", "*"]
+#_markers = ["*"] * 100
+def visualize(list_of_objects: Union[List[pp.zonotope], List[np.ndarray]], ax: plt.Axes = None, alpha: float = 0.5, 
               title: str = r'pypolycontain visualization', show_vertices: bool = True, equal_axis: bool = False,
-              grid: bool = True, scale_axes: bool = False) -> plt.Axes:
+              grid: bool = False, scale_axes: bool = False, _labels: list = None, markers = None) -> plt.Axes:
     r"""
     Visualization.
     
@@ -325,11 +332,13 @@ def visualize(list_of_objects: Union[List[pp.zonotope], List[np.ndarray]], ax: p
         * 
     """
     a = 0.5
+    if type(markers) is np.ndarray: _markers = markers
+    else: _markers = __markers
     tuple_of_projection_dimensions=[0,1]
     if type(ax)==type(None):
         _,ax=plt.subplots()
     p_list, x_all= [], np.empty((0,2))  
-    for p in list_of_objects:
+    for i,p in enumerate(list_of_objects):
         if p.n>2:
             print('projection on ',tuple_of_projection_dimensions[0],\
                   ' and ',tuple_of_projection_dimensions[1], 'dimensions')
@@ -344,7 +353,7 @@ def visualize(list_of_objects: Union[List[pp.zonotope], List[np.ndarray]], ax: p
         p_list.append(mypolygon) 
         x_all = np.vstack((x_all, x))
         if show_vertices:
-            ax.plot(x[:,0],x[:,1],'*',color=p.color)
+            ax.plot(x[:,0],x[:,1],marker=_markers[i],color=p.color, markersize=4)
     p_patch = PatchCollection(p_list,color=[p.color for p in list_of_objects], alpha=alpha)
     ax.add_collection(p_patch)
     if scale_axes:
@@ -353,9 +362,17 @@ def visualize(list_of_objects: Union[List[pp.zonotope], List[np.ndarray]], ax: p
     if grid:
         ax.grid(color=(0,0,0), linestyle='--', linewidth=0.3)
     ax.set_title(title)
-    ax.set_xlabel("$x_1$")
-    ax.set_ylabel("$x_2$")
+    ax.set_xlabel("$x$")
+    ax.set_ylabel("$y$")
     if equal_axis:
         ax.axis('equal')
+    if _labels:
+        handles, labels = ax.get_legend_handles_labels()
+        circs = [*handles]
+        _labels_ = [*labels, *_labels]
+        for i in range(len(list_of_objects)):
+            circs.append(Line2D([0], [0], linestyle="none", marker=_markers[i], alpha=0.4, markersize=10, 
+                                markerfacecolor=list_of_objects[i].color, markeredgecolor=list_of_objects[i].color))
+        if len(list_of_objects) != 0: ax.legend(circs, _labels_, numpoints=1, loc="upper right")
 
 

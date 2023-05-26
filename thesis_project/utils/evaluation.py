@@ -3,7 +3,12 @@ import pypolycontain as pp
 from shapely.geometry import Polygon
 from DRA.operations import optimize_vertices
 from typing import Union, List
+import os
 
+
+ROOT = os.getcwd() + "/thesis_project/.datasets"
+RA_PATH = "/SinD/reachable_sets.pkl"
+RAB_PATH = "/SinD/reachable_base_sets.pkl"
 
 def zonotope_area(z: Union[pp.zonotope, Polygon], simplify: bool = False) -> float:
     """ Calculate the area of a 2D zonotope
@@ -18,14 +23,9 @@ def zonotope_area(z: Union[pp.zonotope, Polygon], simplify: bool = False) -> flo
     assert type(z) == Polygon
     return z.area
 
-def simulate_RA():
-    pass
-
 def PTC_acc_per_class() -> List[float]:
     pass
 
-def AUC():
-    pass
 
 
 if __name__ == "__main__":

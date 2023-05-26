@@ -23,7 +23,7 @@ def visualize_class(map: map.SinD_map, _class: int, data: np.ndarray, labels: np
     input_len : int
         Length of input for the data
     """
-    ax = map.plot_areas()
+    ax, _ = map.plot_areas()
     _ids = np.where(labels == _class)
     _data = data[_ids]
     for _d in _data:

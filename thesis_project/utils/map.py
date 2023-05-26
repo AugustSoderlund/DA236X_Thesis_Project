@@ -49,18 +49,22 @@ class SinD_map:
         osmhandler.apply_file(map_dir)
         return osmhandler.osm_data
     
-    def plot_areas(self, highlight_areas: list = ["crosswalk"], alpha: float = 0.2):
+    def plot_areas(self, highlight_areas: list = ["crosswalk", "sidewalk"], alpha: float = 0.08):
         fig, ax = plt.subplots()
+        fig.set_size_inches(6.5, 4.13)
+        fig.subplots_adjust(top=0.95, left=0.08, bottom=0.1, right=0.95)
         _points = self.get_area("")
         ax.scatter(*zip(*_points), alpha=0) # To get bounds correct
         _attr = dir(self)
         _polys = [v for (_, v) in enumerate(_attr) if re.findall("poly$", v)]
         ["_".join([area, "poly"]) for area in highlight_areas]
         _ids = [_polys.index(i) for i in ["_".join([area, "poly"]) for area in highlight_areas]]
-        _colors = np.array(["b"] * len(_polys))
-        _colors[_ids] = "g"
+        _colors = np.array(["r"] * len(_polys))
+        _colors[_ids] = "green"
+        _alphas = np.array([0.05] * len(_polys))
+        _alphas[_ids] = alpha
         for i, _poly in enumerate(_polys):
-            ax.add_patch(PolygonPatch(eval(".".join(["self", _poly])), alpha=alpha, color=_colors[i]))
+            ax.add_patch(PolygonPatch(eval(".".join(["self", _poly])), alpha=_alphas[i], color=_colors[i]))
         return ax, fig
     
     def get_area(self, regex: str = "crosswalk", tag_key: str = "name"):

@@ -1,9 +1,10 @@
 import warnings
+
 warnings.filterwarnings("ignore")
 
 import time
 from utils.visualization import *
-from DRA.operations import visualize_zonotopes, create_M_w, input_zonotope
+from DRA.operations import visualize_zonotopes, create_M_w, input_zonotope, minkowski_sum, linear_map
 from DRA.reachability import LTI_reachability
 from PTC.input_state import *
 from PTC.classification import DecisionTree
@@ -13,7 +14,9 @@ from utils.data_processor import *
 from utils.evaluation import *
 from DRA.zonotope import zonotope
 import numpy as np
-from utils.simulation import simulate
+from utils.simulation import simulate, calc_d, generate_trajectory, simulate_forged_traj, _simulation, run_scenario, vis_class_trajs, format_volume_calc_for_latex, visualize_scenario, visualize_state_inclusion_acc, intersection_figure
+from utils.simulation import reachability_for_specific_position_and_mode as RA
+from utils.simulation import reachability_for_all_modes as RA_all
 from shapely.ops import linemerge, unary_union, polygonize
 
 
@@ -163,7 +166,7 @@ def _backup():
     #     v_x.append(_vel_x)
     #     v_y.append(_vel_y)
     _,ax = plt.subplots()
-    t = list(range(0,a))
+    #t = list(range(0,a))
     # for i in range(a, U.shape[1], a):
     #     _vx, _vy = U[0,i-a:i], U[1,i-a:i]
     #     ax.plot(t, _vx, c="r")
@@ -226,7 +229,8 @@ def _backup():
     z = zonotope(c_z, G_z)
     t = time.time()
     axxxx, _ = _sind.map.plot_areas()
-    visualize_zonotopes([z, R, R, R, R, R_base], map=axxxx, show=False)
+    z.color = [1,1,55/255]
+    visualize_zonotopes([R_base, R, z], map=axxxx, show=False, _legend=True)
     print(time.time()-t)
     x, y = [],[]
     _ped_poly = Polygon(pp.to_V(z))
@@ -238,14 +242,14 @@ def _backup():
     #         if Point((_x,_y)).within(_ped_poly):
     #             plt.plot(x,y, c="r")
     #         x, y = [], []
-    for i in range(a,X_p_all.shape[1],a):
-        _x, _y = X_p_all[0,i-a:i], X_p_all[1,i-a:i]
-        _x, _y = _x[-1], _y[-1]
-        plt.scatter(_x,_y, c="r", s=2)
-    for i in range(a,X_p.shape[1],a):
-        _x, _y = X_p[0,i-a:i], X_p[1,i-a:i]
-        _x, _y = _x[-1], _y[-1]
-        plt.scatter(_x,_y, c="g", s=2)
+    # for i in range(a,X_p_all.shape[1],a):
+    #     _x, _y = X_p_all[0,i-a:i], X_p_all[1,i-a:i]
+    #     _x, _y = _x[-1], _y[-1]
+    #     plt.scatter(_x,_y, c="r", s=2)
+    # for i in range(a,X_p.shape[1],a):
+    #     _x, _y = X_p[0,i-a:i], X_p[1,i-a:i]
+    #     _x, _y = _x[-1], _y[-1]
+    #     plt.scatter(_x,_y, c="g", s=2)
     #plt.arrow(c_z[0], c_z[1], v[0], v[1])
     #plt.plot(X_p_all[0,:], X_p_all[1,:], c="r")
     #plt.plot(X_p[0,:], X_p[1,:], c="b")
@@ -309,6 +313,58 @@ def _backup():
     #plt.show() """
 
 if __name__ == "__main__":
-    _map = SinD_map()
-    simulate(_map, True, input_len=90, _N=30, frames=500, load_dnn=False, load_RA=True, frequency=None, use_multiprocessing=False, plot_future_locs=True)
+    #_map = SinD_map()
+    #_map.plot_areas(alpha=0.1)
+    #plt.show()
+    #_sind, _d = calc_d(_load=True)
+    #RA_all(baseline=True, _sind_=_sind, d_=_d)
+    # xy, v = generate_trajectory()
+    # for _xy in xy:
+    #     plt.scatter(_xy[0], _xy[1], c="r")
+    # plt.show()
+    #simulate_forged_traj(load=True)
+    #RA(_baseline=False)
+    # simulate(_map, True, input_len=90, _N=30, frames=500, load_dnn=False, load_RA=True, frequency=None, 
+    #          use_multiprocessing=False, plot_future_locs=True, calc_baseline=True, calc_areas=True, 
+    #          calc_accuracy=True)
     #_backup()
+    #for i in range(1,4):
+    #    run_scenario(i)    
+        #visualize_scenario(str(i), save=True)
+    #format_volume_calc_for_latex()
+    #visualize_scenario("1")
+    #visualize_scenario("2")
+    #visualize_scenario("3")
+    #for i in range(0,7):
+    #    vis_class_trajs(i)
+    #vis_class_trajs(0)
+    #visualize_state_inclusion_acc()
+    #_simulation(load_calc_d_data=True, load_data=False, frames=1000, continue_prev=False, _baseline=False)
+    #_backup()
+    s = "1"
+    #run_scenario(int(s))
+    visualize_scenario(scenario=s, all_modes=False, save=True, overlay_image=True)
+    #fig, ax = plt.subplots()
+    #c_z = np.array([4,4])
+    #G_z = np.array([[1,1,1],[-1,0.5,1]])
+    #z = zonotope(c_z, G_z)
+    #zonos = [z]
+    #labels = ["Initial set"]
+    #eta = [0.3,0.6,1]
+    #for e in eta:
+    #    z0 = zonotope(np.array([0,0]), G_z)
+    #    z1 = linear_map(e, z0)
+    #    z_scaled = minkowski_sum(z, z1)
+    #    z_scaled.color = [0.5,0.5,0.5]
+    #    labels.append("Scaled with " + str(e))
+    #    zonos.append(z_scaled)
+    #zonos.reverse()
+    #labels.reverse()
+    #visualize_zonotopes(zonos, map=ax, show=True, _labels=labels)
+    L = [5,7,8,23,24,25,30,36,37,38,46,50,53,55,63]
+    L = [23,46,63,55,37]
+    modes = ["Cross illegally", "Not cross", "Not cross", "Cross now", "Cross straight"]
+    ids = ["P"+str(l) for l in L]
+    #visualize_state_inclusion_acc(convergence=True, side="right")
+    intersection_figure(dataset="8_3_1", ped_ids=ids, modes=modes, use_len=False, show=False)
+    #visualize_scenario(scenario="2", all_modes=False, overlay_image=True)

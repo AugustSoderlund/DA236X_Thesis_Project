@@ -148,7 +148,7 @@ def is_inside(z: pp.zonotope, point: np.ndarray) -> bool:
     _poly = Polygon(V).buffer(2*np.finfo(float).eps)
     return _poly.contains(Point(point))
 
-def input_zonotope(U: List[np.ndarray], N: int = 30, gamma: str = "std") -> List[pp.zonotope]:
+def input_zonotope(U: List[np.ndarray], N: int = 30, gamma: str = "max") -> List[pp.zonotope]:
     """ Calculate the input zonotope U_k for the reachability analysis
 
         Parameters:
@@ -168,7 +168,7 @@ def input_zonotope(U: List[np.ndarray], N: int = 30, gamma: str = "std") -> List
         vy[i,0:u.shape[1]] = u[1,:]
     vx_mean, vy_mean = vx.mean(axis=0), vy.mean(axis=0)
     if gamma == "std": vx_std, vy_std = vx.std(axis=0), vy.std(axis=0)
-    elif gamma == "max": vx_std, vy_std = vx.max(axis=0), vy.max(axis=0)
+    elif gamma == "max": vx_std, vy_std = np.abs(vx-vx_mean).max(axis=0), np.abs(vy-vy_mean).max(axis=0)
     else: raise ValueError
     U_k = []
     for i in range(0,N):

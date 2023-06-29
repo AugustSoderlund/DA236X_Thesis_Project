@@ -454,10 +454,10 @@ def reachability_for_specific_position_and_mode(pos: np.ndarray = np.array([-3.4
     v = vel
     classification = c
     # TODO: Change the classification below to c instead of [0,1,2,3,4,5,6] (used for only baseline computations)
-    U, X_p, X_m, _ = create_io_state(d, z, v, [0,1,2,3,4,5,6], input_len=input_len, drop_equal=True, angle_filter=True)
+    U, X_p, X_m, _ = create_io_state(d, z, v, c, input_len=input_len, drop_equal=True, angle_filter=True)
     process_noise = 0.005
     _, _, U_traj = split_io_to_trajs(X_p, X_m, U, threshold=5, dropped=True, N=a)
-    U_k = input_zonotope(U_traj, N=a)
+    U_k = input_zonotope(U_traj, N=a, gamma="max")
     z_w = zonotope(np.array([0,0]), process_noise*np.ones(shape=(2,1)))
     M_w = create_M_w(U.shape[1], z_w, disable_progress_bar=sim)
     G_z = np.array([[0.5,0,0.25],[0,0.5,0.15]])
@@ -470,7 +470,7 @@ def reachability_for_specific_position_and_mode(pos: np.ndarray = np.array([-3.4
     if _baseline:
         U_all, X_p_all, X_m_all, _ = create_io_state(d, z, v, [0,1,2,3,4,5,6], input_len=input_len, drop_equal=True, angle_filter=False)
         _, _, U_all_traj = split_io_to_trajs(X_p_all, X_m_all, U_all, threshold=5, dropped=True, N=a)
-        U_k_all = input_zonotope(U_all_traj, N=a)
+        U_k_all = input_zonotope(U_all_traj, N=a, gamma="max")
         M_w_base = create_M_w(U_all.shape[1], z_w, disable_progress_bar=sim)
         R_base = LTI_reachability(U_all, X_p_all, X_m_all, z, z_w, M_w_base, U_k_all, N=a, disable_progress_bar=sim)
         R_base_all = R_base
@@ -743,7 +743,7 @@ def _simulation(input_len: int = 90, load_data: bool = True, load_calc_d_data: b
 def visualize_state_inclusion_acc(baseline: bool = True, convergence: bool = True, side: str = "right"):
     if baseline:
         _f = open(ROOT + "/state_inclusion_acc_modal_without_heading.pkl", "rb")
-        _f_b = open(ROOT + "/state_inclusion_acc_baseline_without_heading.pkl", "rb")
+        _f_b = open(ROOT + "/state_inclusion_acc - Max_baseline.pkl", "rb")
     else:
         _f = open(ROOT + "/state_inclusion_acc.pkl", "rb")
     RA_acc = pickle.load(_f)
@@ -846,7 +846,7 @@ def visualize_scenario(scenario: str = "1", all_modes: bool = True, save: bool =
             _zono.color = [0,0.6,0]
             _mode_str = list(LABELS.keys())[_mode]
             _title = _mode_str.replace("_", " ").capitalize() + " vs. Baseline"
-            l = ["Baseline", _mode_str.replace("_", " ").capitalize(), "Initial set", "Initial heading"]
+            l = ["Baseline", _mode_str.replace("_", " ").capitalize(), "Corrected state set", "Initial heading"]
             markers = ["o", "s", "h"]
             if overlay_image:
                 ax, _ = SinD_map().plot_areas()

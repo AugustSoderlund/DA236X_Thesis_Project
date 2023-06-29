@@ -4,7 +4,7 @@ warnings.filterwarnings("ignore")
 
 import time
 from utils.visualization import *
-from DRA.operations import visualize_zonotopes, create_M_w, input_zonotope, minkowski_sum, linear_map
+from DRA.operations import visualize_zonotopes, create_M_w, input_zonotope, minkowski_sum, linear_map, visualize
 from DRA.reachability import LTI_reachability
 from PTC.input_state import *
 from PTC.classification import DecisionTree
@@ -329,7 +329,7 @@ if __name__ == "__main__":
     #          calc_accuracy=True)
     #_backup()
     #for i in range(1,4):
-    #    run_scenario(i)    
+        #run_scenario(i)    
         #visualize_scenario(str(i), save=True)
     #format_volume_calc_for_latex()
     #visualize_scenario("1")
@@ -339,11 +339,11 @@ if __name__ == "__main__":
     #    vis_class_trajs(i)
     #vis_class_trajs(0)
     #visualize_state_inclusion_acc()
-    #_simulation(load_calc_d_data=True, load_data=False, frames=1000, continue_prev=False, _baseline=False)
+    #_simulation(load_calc_d_data=False, load_data=False, frames=1000, continue_prev=False, _baseline=False)
+    #visualize_state_inclusion_acc()
     #_backup()
-    s = "1"
     #run_scenario(int(s))
-    visualize_scenario(scenario=s, all_modes=False, save=True, overlay_image=True)
+    #visualize_scenario(scenario=s, all_modes=False, save=True, overlay_image=True)
     #fig, ax = plt.subplots()
     #c_z = np.array([4,4])
     #G_z = np.array([[1,1,1],[-1,0.5,1]])
@@ -361,10 +361,47 @@ if __name__ == "__main__":
     #zonos.reverse()
     #labels.reverse()
     #visualize_zonotopes(zonos, map=ax, show=True, _labels=labels)
-    L = [5,7,8,23,24,25,30,36,37,38,46,50,53,55,63]
-    L = [23,46,63,55,37]
-    modes = ["Cross illegally", "Not cross", "Not cross", "Cross now", "Cross straight"]
-    ids = ["P"+str(l) for l in L]
+    #L = [5,7,8,23,24,25,30,36,37,38,46,50,53,55,63]
+    #L = [23,46,63,55,37]
+    #modes = ["Cross illegally", "Not cross", "Not cross", "Cross now", "Cross straight"]
+    #ids = ["P"+str(l) for l in L]
     #visualize_state_inclusion_acc(convergence=True, side="right")
-    intersection_figure(dataset="8_3_1", ped_ids=ids, modes=modes, use_len=False, show=False)
+    #intersection_figure(dataset="8_3_1", ped_ids=ids, modes=modes, use_len=False, show=False)
     #visualize_scenario(scenario="2", all_modes=False, overlay_image=True)
+    s = "3"
+    #run_scenario(int(s))
+    visualize_scenario(scenario=s, all_modes=False, save=True, overlay_image=True)
+    #format_volume_calc_for_latex()
+    """ shift_p, mult_p, shift_s, mult_s = -2, 2, -0.5, 5
+    x_p, y_p = mult_p*np.random.rand(1,10)+shift_p, mult_p*np.random.rand(1,10)+shift_p
+    x_s, y_s = mult_s*(np.random.rand(1,10)+shift_s), mult_s*(np.random.rand(1,10)+shift_s)
+    def temp_f(x,y):
+        x_bar = x.mean()
+        y_bar = y.mean()
+        x_max = abs(x-x_bar).max()
+        y_max = abs(y-y_bar).max()
+        return np.array([x_bar, y_bar]), np.array([[x_max,0], [0,y_max]])
+    U_p = zonotope(*temp_f(x_p, y_p))
+    U_s = zonotope(*temp_f(x_s, y_s))
+    _, ax1 = plt.subplots()
+    ax1.scatter(x_p,y_p, s=30, c="blue", label="Inputs")
+    ax1.scatter(x_p.mean(), y_p.mean(), s=70, c="red", label="Mean")
+    visualize([U_p], ax=ax1, _labels=["Input zonotope"])
+    ax1.set_ylabel("$v_y$"), ax1.set_xlabel("$v_x$")
+    ax1.set_title("")
+    ax1.scatter(x_p,y_p, s=30, c="blue", label="Inputs")
+    ax1.scatter(x_p.mean(), y_p.mean(), s=70, c="red", label="Mean")
+    ax1.set_ylim([-3,3]), ax1.set_xlim([-3,3])
+    ax1.grid()
+
+    _, ax2 = plt.subplots()
+    ax2.scatter(x_s,y_s, s=30, c="blue", label="Inputs")
+    ax2.scatter(x_s.mean(), y_s.mean(), s=70, c="red", label="Mean")
+    visualize([U_s], ax=ax2, _labels=["Input zonotope"])
+    ax2.set_ylabel("$v_y$"), ax2.set_xlabel("$v_x$")
+    ax2.set_title("")
+    ax2.scatter(x_s,y_s, s=30, c="blue", label="Inputs")
+    ax2.scatter(x_s.mean(), y_s.mean(), s=70, c="red", label="Mean")
+    ax2.set_ylim([-3,3]), ax2.set_xlim([-3,3])
+    ax2.grid()
+    plt.show() """
